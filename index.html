@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#202124">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>서울 재개발 Pocket</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<link rel="stylesheet" href="/style.css">
+
+</head>
+<body>
+<div class="wrap">
+  <div id="home" class="page active">
+    <header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · LIVE DATA</div><h1>서울 재개발 Pocket</h1><div class="sub">신속통합기획·정비사업 + 국토부 실거래 연동</div><div class="toolbar"><div id="updated" class="sub">데이터 불러오는 중…</div><button id="refreshBtn" class="btn dark">새로고침</button></div></header>
+    <section class="section"><div class="notice"><b>데이터 기준</b><br>실거래와 온비드는 <b>Vercel 서버에서 공공 API를 직접 조회</b>합니다. Polygon 내부 판정 전까지 실거래는 법정동 참고값입니다.</div></section>
+<section class="section filterpanel">
+  <div class="searchbox"><input id="projectSearch" type="search" placeholder="사업지명 · 자치구 · 동 · 진행단계 검색" autocomplete="off"><button id="clearSearch" type="button">×</button></div>
+  <div id="districtFilters" class="districtfilters"></div>
+</section>
+    <section class="section"><div class="section-head"><h2>추적 사업지</h2><small id="count">-</small></div><div id="cards" class="cards"><div class="loading">불러오는 중…</div></div></section>
+  </div>
+
+  <div id="market" class="page">
+    <header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · MARKET</div><h1>실거래 · 시장</h1><div class="sub">국토부 4종 실거래 API · 법정동 참고 데이터</div></header>
+    <section class="section"><div class="notice"><b>가성비 등급은 아직 평가대기입니다.</b><br>사업구역 Polygon/필지 목록 연동 전에는 법정동 전체 거래를 구역 내부 거래로 간주하지 않습니다.</div></section>
+    <section class="section"><div class="section-head"><h2>사업지별 시장</h2><small id="marketStamp">-</small></div><div id="marketList" class="list"></div></section>
+  </div>
+
+
+  <div id="onbidPage" class="page">
+    <header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · ONBID</div><h1>온비드 공매</h1><div class="sub">사업지를 선택하면 해당 구·동의 공매만 조회합니다.</div></header>
+    <section class="section"><div class="notice"><b>조회 방식 최적화</b><br>43개 사업지를 한꺼번에 호출하지 않습니다. 아래에서 사업지를 선택하면 재산유형별로 온비드 API를 조회합니다.</div></section>
+    <section class="section">
+      <div class="section-head"><h2>사업지 선택</h2><small>온비드</small></div>
+      <div class="searchbox"><input id="onbidSearch" type="search" placeholder="사업지명 · 자치구 · 동 검색"><button id="clearOnbidSearch" type="button">×</button></div>
+      <div id="onbidProjectList" class="list" style="margin-top:10px"></div>
+    </section>
+    <section class="section"><div class="section-head"><h2>공매 조회결과</h2><small id="onbidStamp">사업지를 선택하세요</small></div><div id="onbidList" class="list"><div class="empty">사업지를 선택하면 공매 물건을 조회합니다.</div></div></section>
+  </div>
+
+  <div id="dataPage" class="page">
+    <header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · SOURCES</div><h1>공식 데이터</h1><div class="sub">국토부 · 서울시 · 한국부동산원 · 온비드 · 법원 등 신뢰도 높은 자료원</div></header>
+    <section class="section"><div class="notice"><b>수집 원칙</b><br>공식기관·공공데이터를 우선 사용합니다. 공개 API나 이용권한이 명확하지 않은 민간 사이트는 무단 자동수집하지 않습니다.</div></section>
+    <section class="section"><div class="section-head"><h2>연결 현황</h2><small id="sourceStamp">불러오는 중…</small></div><div id="sourceList" class="list"><div class="loading">자료원 불러오는 중…</div></div></section>
+    <section class="section"><div class="section-head"><h2>정비사업 데이터</h2><small id="renewalCount">-</small></div><div id="renewalSummary" class="card"></div></section>
+  </div>
+
+  <div id="statusPage" class="page">
+    <header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · STATUS</div><h1>API · 데이터 상태</h1><div class="sub">실제 백엔드 연결 상태</div></header>
+    <section class="section"><div class="section-head"><h2>연동 상태</h2><small id="statusStamp">-</small></div><div id="statusBox" class="data-status"></div></section>
+  </div>
+
+  <div id="detail" class="page">
+    <header><button class="backbtn" onclick="goBackFromDetail()">← 뒤로가기</button><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · PROJECT</div><h1 id="detailTitle">사업지 상세</h1><div id="detailSub" class="sub"></div></header>
+    <main id="detailMain"><div class="loading">불러오는 중…</div></main>
+  </div>
+
+  <div id="newPage" class="page">
+    <header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · NEW</div><h1>신규 사업지</h1><div class="sub">사업지별 최근 거래를 토지 · 연립다세대 · 단독다가구 · 아파트로 구분</div></header>
+    <section class="section"><div class="notice"><b>새사업지 보기</b><br>사업지별 최근 참고 실거래를 <b>토지 / 연립다세대 / 단독다가구 / 아파트</b>로 분리해 표시합니다. 현재는 사업구역 경계가 아닌 해당 법정동 기준입니다.</div></section>
+    <section class="section"><div id="newList" class="cards"></div></section>
+  </div>
+</div>
+
+<div class="bottom"><nav class="bottomnav">
+<button data-page="home" class="on">홈</button>
+<button data-page="newPage">새사업지</button>
+<button data-page="market">실거래</button>
+<button data-page="onbidPage">공매</button>
+<button data-page="dataPage">자료</button>
+<button data-page="statusPage" class="dev" title="개발자 API 상태">⚙</button>
+</nav></div>
+
+<script src="/embedded-data.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
