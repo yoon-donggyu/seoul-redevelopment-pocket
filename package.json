@@ -2,6 +2,9 @@
   "name": "seoul-redevelopment-pocket",
   "private": true,
   "type": "module",
+  "scripts": {
+    "check": "node scripts/check.mjs"
+  },
   "dependencies": {
     "fast-xml-parser": "^5.2.5"
   }
