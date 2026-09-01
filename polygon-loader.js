@@ -3,6 +3,9 @@
   'use strict';
   const EXTRA=['/data/project_boundaries_extra_1.geojson','/data/project_boundaries_extra_2.geojson','/data/project_boundaries_extra_3.geojson'];
   let promise=null;
+  function currentTrackedCount(){
+    try{return Array.isArray(dashboard?.projects)?dashboard.projects.length:null}catch{return null}
+  }
   function loadExtras(){
     if(promise)return promise;
     promise=Promise.all(EXTRA.map(u=>fetch(u,{cache:'no-store'}).then(r=>r.ok?r.json():({features:[]})).catch(()=>({features:[]}))))
@@ -11,7 +14,10 @@
         const base=(typeof boundaryData!=='undefined'&&boundaryData?.features)?boundaryData:{type:'FeatureCollection',features:[]};
         const map=new Map((base.features||[]).map(f=>[f.properties?.projectId,f]));
         extras.forEach(f=>{const id=f.properties?.projectId;if(id&&!map.has(id))map.set(id,f)});
-        boundaryData={...base,meta:{...(base.meta||{}),matchedCount:map.size,trackedCount:43,restoredAt:'2026-09-01'},features:[...map.values()]};
+        const tracked=currentTrackedCount();
+        const meta={...(base.meta||{}),matchedCount:map.size,restoredAt:'2026-09-01'};
+        if(Number.isFinite(tracked))meta.trackedCount=tracked;else delete meta.trackedCount;
+        boundaryData={...base,meta,features:[...map.values()]};
         return boundaryData;
       });
     return promise;
@@ -21,6 +27,8 @@
     window.renderDashboard=function(...args){
       const r=oldRender.apply(this,args);
       loadExtras().then(()=>{
+        const tracked=currentTrackedCount();
+        if(boundaryData?.meta&&Number.isFinite(tracked))boundaryData.meta.trackedCount=tracked;
         try{if(typeof applyFilter==='function')applyFilter();if(typeof renderNew==='function')renderNew();if(typeof renderMarket==='function')renderMarket()}catch(e){console.warn('polygon rerender',e)}
       });
       return r;
