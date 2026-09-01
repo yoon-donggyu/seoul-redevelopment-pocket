@@ -43,7 +43,8 @@ function apiErrorFromParsed(p){
   const h=p?.response?.header||p?.header||{};
   const code=String(h.resultCode??h.RESULT_CODE??'').trim();
   const msg=String(h.resultMsg??h.resultMessage??h.RESULT_MSG??'').trim();
-  if(code && !['00','000','0000','NORMAL_SERVICE'].includes(code)) return `${code}${msg?' · '+msg:''}`;
+  const successCodes=new Set(['0','00','000','0000','NORMAL_SERVICE']);
+  if(code && !successCodes.has(code)) return `${code}${msg?' · '+msg:''}`;
   const err=p?.OpenAPI_ServiceResponse?.cmmMsgHeader||p?.cmmMsgHeader;
   if(err){const c=String(err.returnReasonCode??err.returnAuthMsg??'').trim(),m=String(err.errMsg??err.returnAuthMsg??'').trim();return [c,m].filter(Boolean).join(' · ')||'공공데이터 API 오류';}
   return null;
@@ -53,7 +54,7 @@ async function fetchRows(lawdCd,ym){
   const u=new URL(APT_URL);u.searchParams.set('serviceKey',key());u.searchParams.set('LAWD_CD',lawdCd);u.searchParams.set('DEAL_YMD',ym);u.searchParams.set('numOfRows','3000');u.searchParams.set('pageNo','1');
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
   try{
-    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/8.5'}});
+    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/8.6'}});
     const t=await r.text();
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const p=parser.parse(t);
