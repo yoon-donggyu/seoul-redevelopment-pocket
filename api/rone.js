@@ -30,7 +30,6 @@ function normalize(rows){
     const cls=String(pick(r,['CLS_NM','CLS_NAME','CLASS_NAME'])||'');
     out.push({period:p,label:labelPeriod(p),value,item,cls});
   }
-  // If multiple items exist, prefer rows explicitly describing apartment sale price index.
   const preferred=out.filter(x=>/아파트/.test(x.item)&&/(매매|가격지수|지수)/.test(x.item));
   const base=preferred.length>=2?preferred:out;
   const seen=new Map();for(const x of base)seen.set(x.period,x);
@@ -38,6 +37,7 @@ function normalize(rows){
 }
 
 export default async function handler(req,res){
+  res.setHeader('Cache-Control','public, s-maxage=43200, stale-while-revalidate=86400');
   try{
     const key=(process.env.RONE_API_KEY||'').trim();
     if(!key)return res.status(500).json({ok:false,error:'RONE_API_KEY가 없습니다.'});
@@ -49,7 +49,7 @@ export default async function handler(req,res){
     u.searchParams.set('pIndex','1');u.searchParams.set('pSize','100');
     const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
     let r,text;
-    try{r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/json,text/plain,*/*','User-Agent':'SeoulRedevelopmentPocket/8.0'}});text=await r.text()}finally{clearTimeout(timer)}
+    try{r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/json,text/plain,*/*','User-Agent':'SeoulRedevelopmentPocket/8.4'}});text=await r.text()}finally{clearTimeout(timer)}
     if(!r.ok)throw new Error(`R-ONE HTTP ${r.status}`);
     let data;try{data=JSON.parse(text)}catch{throw new Error('R-ONE 응답이 JSON이 아닙니다.')}
     const series=normalize(rowsFrom(data));
@@ -57,6 +57,6 @@ export default async function handler(req,res){
     const latest=series.at(-1),prev=series.at(-2);
     const change=prev.value?((latest.value/prev.value)-1)*100:null;
     const signal=change==null?'확인중':change>0.1?'상승':change<-0.1?'하락':'보합';
-    return res.status(200).json({ok:true,source:'한국부동산원 R-ONE',statblId:STATBL_ID,region:'서울',housingType:'아파트',metric:'월간 매매가격지수',latest:{...latest,changePct:change==null?null:Math.round(change*1000)/1000,signal},series:series.slice(-18),generatedAt:new Date().toISOString()});
+    return res.status(200).json({ok:true,source:'한국부동산원 R-ONE',statblId:STATBL_ID,region:'서울',housingType:'아파트',metric:'월간 매매가격지수',cache:'12시간 CDN 캐시',latest:{...latest,changePct:change==null?null:Math.round(change*1000)/1000,signal},series:series.slice(-18),generatedAt:new Date().toISOString()});
   }catch(e){return res.status(502).json({ok:false,error:String(e?.message||e),source:'한국부동산원 R-ONE'})}
 }
