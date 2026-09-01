@@ -16,8 +16,12 @@
     <section class="section guide-grid">
       <details class="card guide-card"><summary>🚦 내집마련 신호판은 뭐예요?</summary><div class="guide-body">홈 위쪽에서 가장 먼저 보는 곳이에요.<br><br><b>서울 집값 흐름</b> = 한국부동산원 공식 지수<br><b>공매·경매</b> = 싸게 살 기회를 찾는 메뉴 연결 상태<br><b>재개발 정보 완성도</b> = 공식 확인값이 얼마나 채워졌는지<br><b>관심 사업지</b> = ☆로 저장한 곳의 수</div></details>
       <details class="card guide-card"><summary>🏙 서울 외곽 내집마련 보드는 뭐예요?</summary><div class="guide-body">서울에서 상대적으로 가격 부담이 낮은 지역을 찾기 쉽게 만든 비교판이에요.<br><br>현재는 강북·도봉·노원·중랑·성북·은평·강서·구로·금천·관악·양천·강동 등 12개 자치구의 <b>국토부 아파트 실거래</b>를 같은 방식으로 비교합니다.<br><br><b>가격부담 낮음</b> = 서울 전체에서 싸다는 뜻이 아니라, 이 12개 지역끼리 비교했을 때 상대적으로 평당 실거래가가 낮다는 뜻이에요.</div></details>
+      <details class="card guide-card"><summary>📐 전체 / 59㎡형 / 84㎡형은?</summary><div class="guide-body">아파트 크기가 너무 다르면 가격 비교가 헷갈릴 수 있어서 비슷한 크기끼리 따로 볼 수 있어요.<br><br><b>59㎡형</b> = 전용면적 55~65㎡ 거래<br><b>84㎡형</b> = 전용면적 80~90㎡ 거래<br><br>흔히 말하는 59타입·84타입 주변 면적을 묶은 <b>비교용 범위</b>예요. 특정 아파트의 정확한 타입명과 완전히 같은 뜻은 아니에요.</div></details>
+      <details class="card guide-card"><summary>💳 4억 / 5억 / 6억 / 7억 이하 필터는?</summary><div class="guide-body">내가 생각하는 예산 안에서 볼 만한 지역만 빠르게 남기는 버튼이에요.<br><br>예를 들어 <b>59㎡형 + 5억 이하</b>를 누르면, 해당 지역 59㎡형 거래의 <b>월 중간 거래가가 5억원 이하</b>인 곳만 보여줘요.<br><br>모든 아파트가 그 가격 이하라는 뜻은 아니고, 후보 지역을 좁히는 참고 필터예요.</div></details>
+      <details class="card guide-card"><summary>🧪 데이터 신뢰도는 뭐예요?</summary><div class="guide-body">거래가 너무 적으면 가격 변화율이 크게 흔들릴 수 있어서 거래 건수를 같이 표시해요.<br><br><b>신뢰 높음</b> = 최신 월 거래 20건 이상<br><b>참고</b> = 5~19건<br><b>표본 부족</b> = 4건 이하<br><br><b>표본 부족</b>일 때는 전월 대비 숫자를 그대로 믿기보다 실제 단지 실거래를 꼭 다시 확인하세요.</div></details>
       <details class="card guide-card"><summary>💵 월 중간 거래가 / 평당가는?</summary><div class="guide-body"><b>월 중간 거래가</b>는 그 달에 신고된 아파트 거래금액을 낮은 순서부터 놓았을 때 가운데 가격이에요.<br><br><b>평당 실거래 중앙값</b>은 아파트 크기가 달라도 비교하기 쉽도록 1평당 가격으로 바꾼 뒤 가운데 값을 사용한 숫자예요.<br><br>특정 아파트 한 채의 시세는 아니에요.</div></details>
       <details class="card guide-card"><summary>📈 전월 대비 +3% 같은 숫자는?</summary><div class="guide-body">지난달에 거래된 아파트들의 <b>평당가 중앙값</b>과 이번 달 중앙값을 비교한 숫자예요.<br><br>+면 이번 달 신고거래가 더 높았고, -면 더 낮았다는 뜻이에요.<br><br><b>주의:</b> 같은 아파트만 반복해서 비교한 공식 가격지수는 아니기 때문에 거래된 아파트 구성이 달라지면 숫자가 크게 움직일 수 있어요.</div></details>
+      <details class="card guide-card"><summary>⚡ 왜 새로고침해도 데이터가 바로 안 바뀔 수 있나요?</summary><div class="guide-body">앱 속도를 빠르게 하고 공공 API를 너무 많이 호출하지 않도록 일부 자료를 잠시 저장해 두는 <b>캐시</b>를 사용해요.<br><br>외곽 내집마련 보드는 약 <b>6시간</b>, R-ONE 월간 지수는 약 <b>12시간</b> 캐시됩니다.<br><br>공식 월간·실거래 자료는 초 단위 실시간 데이터가 아니기 때문에 이렇게 저장해도 내집마련 흐름을 보는 데 큰 문제는 없어요.</div></details>
       <details class="card guide-card"><summary>📉 R-ONE 서울 집값 차트는?</summary><div class="guide-body">한국부동산원의 <b>서울 아파트 공식 가격지수</b> 흐름이에요.<br><br>내집마련 보드의 실거래 중앙값 변화와 달리, 서울 아파트 시장 전체의 움직임을 보기 위한 공식 지수예요.<br><br>그래서 <b>서울 전체 분위기는 R-ONE</b>, <b>지역별 실제 거래가격은 내집마련 보드</b>로 나눠서 보면 쉬워요.</div></details>
       <details class="card guide-card"><summary>🏠 홈의 재개발 사업지는 뭐예요?</summary><div class="guide-body">신속통합기획이나 정비사업을 추적하는 곳이에요.<br><br><b>사업지명</b> = 재개발을 진행하는 곳의 이름<br><b>진행단계</b> = 일이 얼마나 진행됐는지<br><b>면적</b> = 사업지 크기<br><b>세대수</b> = 새로 지을 집의 수<br><br><b>☆</b>는 자주 보고 싶은 사업지를 저장하는 버튼이에요.</div></details>
       <details class="card guide-card"><summary>❓ 미확인은 무슨 뜻이에요?</summary><div class="guide-body"><b>정보가 없다는 뜻이 아니에요.</b><br>공식자료에서 아직 정확한 숫자나 날짜를 확인하지 못했다는 뜻이에요.<br><br>앱은 모르는 값을 마음대로 만들어 넣지 않습니다.</div></details>
@@ -36,6 +40,11 @@
       <details class="card guide-card"><summary>🆕 새사업지 / 변경은 뭐예요?</summary><div class="guide-body"><b>새사업지</b> = 최근 새로 선정된 사업지 모음<br><br><b>변경</b> = 전에 봤을 때와 달라진 내용 모음<br><br>예: 세대수, 면적, 진행단계, 권리산정기준일 변경</div></details>
       <details class="card guide-card"><summary>⚙ API·데이터 상태는?</summary><div class="guide-body">국토부 실거래, R-ONE, VWorld, 온비드, 서울시 자료 등이 제대로 연결되어 있는지 확인하는 점검 화면이에요.<br><br>평소에는 자주 볼 필요 없어요.</div></details>
       <details class="card guide-card"><summary>📖 어려운 단어 한 번에 보기</summary><div class="guide-body glossary">
+        <div><b>전용면적</b><span>내가 실제로 사용하는 집 안쪽 공간의 면적</span></div>
+        <div><b>59㎡형</b><span>앱에서는 전용 55~65㎡ 거래를 묶어 부르는 비교용 이름</span></div>
+        <div><b>84㎡형</b><span>앱에서는 전용 80~90㎡ 거래를 묶어 부르는 비교용 이름</span></div>
+        <div><b>표본</b><span>가격을 계산할 때 사용한 거래의 개수</span></div>
+        <div><b>캐시</b><span>속도를 높이려고 이미 받은 데이터를 잠시 저장해 두는 것</span></div>
         <div><b>재개발</b><span>오래된 동네를 새롭게 정비하는 사업</span></div>
         <div><b>사업지</b><span>재개발을 진행하는 지역</span></div>
         <div><b>세대수</b><span>집의 개수</span></div>
