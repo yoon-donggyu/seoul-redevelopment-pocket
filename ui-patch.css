@@ -1,5 +1,21 @@
-/* v7.1 UI patch */
-.detail-back-section{padding-top:2px;padding-bottom:28px}
-.bottom-backbtn{width:100%;border:0;border-radius:14px;background:#202124;color:#fff;padding:15px 14px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.10)}
+/* v7.2 compact UI patch */
+.detail header .backbtn{display:none!important}
+.detail-back-section{padding-top:2px;padding-bottom:30px}
+.bottom-backbtn{width:100%;border:0;border-radius:14px;background:#202124;color:#fff;padding:16px 14px;font-size:14px;font-weight:900;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.10)}
 .bottom-backbtn:active{transform:scale(.99)}
 .bottomnav{grid-template-columns:repeat(4,1fr) 34px!important}
+.compact-card{position:relative;padding-right:82px;min-height:72px;transition:.15s ease}
+.compact-card .compact-toggle{position:absolute;right:12px;top:12px;border:1px solid #ddd;background:#fff;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:850;color:#555;cursor:pointer}
+.compact-card.is-collapsed .facts,
+.compact-card.is-collapsed .gradebox,
+.compact-card.is-collapsed .typechips,
+.compact-card.is-collapsed .actions,
+.compact-card.is-collapsed .detailbtn,
+.compact-card.is-collapsed .trade,
+.compact-card.is-collapsed > .meta:not(:first-child){display:none!important}
+.compact-card.is-collapsed .stage{display:inline-block;margin-top:5px}
+.compact-card.is-collapsed{padding-bottom:12px}
+#newList .compact-card,#marketList .compact-card,#cards .compact-card{margin-bottom:8px}
+#statusSourceGroup{border-top:1px solid #e5e5e5;margin-top:18px;padding-top:6px}
+#statusSourceGroup .section:first-child{padding-bottom:0}
+@media(max-width:520px){.compact-card{padding-right:76px}.compact-card .compact-toggle{right:10px;top:10px}.bottom-backbtn{font-size:13px}}
