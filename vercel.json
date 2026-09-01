@@ -4,6 +4,9 @@
     "api/pocket.js": { "maxDuration": 60 },
     "api/onbid.js": { "maxDuration": 60 },
     "api/onbid-detail.js": { "maxDuration": 60 },
-    "api/seoul-official.js": { "maxDuration": 60 }
+    "api/seoul-official.js": { "maxDuration": 60 },
+    "api/rone.js": { "maxDuration": 60 },
+    "api/vworld.js": { "maxDuration": 60 },
+    "api/seoul-land.js": { "maxDuration": 60 }
   }
 }
