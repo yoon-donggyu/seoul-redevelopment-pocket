@@ -1,8 +1,9 @@
 {
   "version": 2,
   "functions": {
-    "api/pocket.js": {
-      "maxDuration": 60
-    }
+    "api/pocket.js": { "maxDuration": 60 },
+    "api/onbid.js": { "maxDuration": 60 },
+    "api/onbid-detail.js": { "maxDuration": 60 },
+    "api/seoul-official.js": { "maxDuration": 60 }
   }
 }
