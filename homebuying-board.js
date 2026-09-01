@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   let DATA=null,segment='all',budget=0,quick='전체';
-  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const hasNum=n=>n!==null&&n!==undefined&&n!==''&&Number.isFinite(Number(n));
   const moneyMan=n=>hasNum(n)?Math.round(Number(n)).toLocaleString('ko-KR')+'만원':'미확인';
   const moneyEok=n=>hasNum(n)?(Number(n)/10000).toFixed(Number(n)%10000?1:0)+'억':'미확인';
@@ -23,7 +23,7 @@
       <b>② 예산</b><div class="homebuying-tools hb-budgets"><button class="hb-chip on" data-budget="0">전체</button><button class="hb-chip" data-budget="40000">4억 이하</button><button class="hb-chip" data-budget="50000">5억 이하</button><button class="hb-chip" data-budget="60000">6억 이하</button><button class="hb-chip" data-budget="70000">7억 이하</button></div>
       <b>③ 조건</b><div class="homebuying-tools hb-quick"><button class="hb-chip on" data-quick="전체">전체</button><button class="hb-chip" data-quick="낮음">가격부담 낮음</button><button class="hb-chip" data-quick="하락">최근 하락</button><button class="hb-chip" data-quick="추적사업지">앱 추적 사업지 있음</button></div></div>
       <div id="homebuyingMeta" class="hb-meta">국토부 실거래 불러오는 중…</div><div id="homebuyingList" class="hb-grid"><div class="loading">서울 아파트 실거래 비교 중…</div></div>
-      <details class="hb-help"><summary>59㎡형·84㎡형과 신뢰도는 어떻게 보나요?</summary><div><b>59㎡형</b>은 전용 55~65㎡, <b>84㎡형</b>은 전용 80~90㎡ 거래를 묶은 참고 비교입니다. <b>신뢰 높음</b>은 최신 월 거래 20건 이상, <b>참고</b>는 5~19건, <b>표본 부족</b>은 4건 이하입니다. 이 신뢰도는 공공기관 등급이 아니라 <b>앱이 거래 표본 수만으로 구분한 참고표시</b>입니다. 예산 필터는 선택한 평형의 <b>월 중간 거래가</b> 기준입니다.</div></details>`;
+      <details class="hb-help"><summary>59㎡형·84㎡형과 표본 참고도는 어떻게 보나요?</summary><div><b>59㎡형</b>은 전용 55~65㎡, <b>84㎡형</b>은 전용 80~90㎡ 거래를 묶은 참고 비교입니다. <b>신뢰 높음</b>은 최신 월 거래 20건 이상, <b>참고</b>는 5~19건, <b>표본 부족</b>은 4건 이하입니다. 이 구분은 공공기관 등급이 아니라 <b>앱이 거래 표본 수만으로 만든 참고표시</b>입니다. 예산 필터는 선택한 평형의 <b>월 중간 거래가</b> 기준입니다.</div></details>`;
     if(anchor)anchor.after(sec);else document.getElementById('home')?.appendChild(sec);
     bindControls();return sec;
   }
