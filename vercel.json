@@ -8,6 +8,7 @@
     "api/rone.js": { "maxDuration": 60 },
     "api/vworld.js": { "maxDuration": 60 },
     "api/seoul-land.js": { "maxDuration": 60 },
-    "api/location-judge.js": { "maxDuration": 60 }
+    "api/location-judge.js": { "maxDuration": 60 },
+    "api/homebuying.js": { "maxDuration": 60 }
   }
 }
