@@ -39,12 +39,32 @@ function summarize(latestRows,prevRows){
   };
 }
 
+function apiErrorFromParsed(p){
+  const h=p?.response?.header||p?.header||{};
+  const code=String(h.resultCode??h.RESULT_CODE??'').trim();
+  const msg=String(h.resultMsg??h.resultMessage??h.RESULT_MSG??'').trim();
+  if(code && !['00','000','0000','NORMAL_SERVICE'].includes(code)) return `${code}${msg?' · '+msg:''}`;
+  const err=p?.OpenAPI_ServiceResponse?.cmmMsgHeader||p?.cmmMsgHeader;
+  if(err){const c=String(err.returnReasonCode??err.returnAuthMsg??'').trim(),m=String(err.errMsg??err.returnAuthMsg??'').trim();return [c,m].filter(Boolean).join(' · ')||'공공데이터 API 오류';}
+  return null;
+}
+
 async function fetchRows(lawdCd,ym){
   const u=new URL(APT_URL);u.searchParams.set('serviceKey',key());u.searchParams.set('LAWD_CD',lawdCd);u.searchParams.set('DEAL_YMD',ym);u.searchParams.set('numOfRows','3000');u.searchParams.set('pageNo','1');
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
   try{
-    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/8.4'}});const t=await r.text();if(!r.ok)throw new Error(`HTTP ${r.status}`);const p=parser.parse(t);const body=p?.response?.body||p?.body||p;const items=arr(body?.items?.item??body?.item??[]);
-    return items.map(x=>{const amount=num(x['거래금액']??x.dealAmount),area=num(x['전용면적']??x.excluUseAr);return{amount,area,pp:pyeongPrice(amount,area)}}).filter(x=>x.amount&&x.area);
+    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/8.5'}});
+    const t=await r.text();
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const p=parser.parse(t);
+    const apiErr=apiErrorFromParsed(p);if(apiErr)throw new Error(apiErr);
+    const body=p?.response?.body||p?.body||p;
+    const items=arr(body?.items?.item??body?.item??[]);
+    return items.map(x=>{
+      const amount=num(x['거래금액']??x.dealAmount??x.dealAmountManwon);
+      const area=num(x['전용면적']??x.excluUseAr??x.exclusiveArea);
+      return{amount,area,pp:pyeongPrice(amount,area)};
+    }).filter(x=>x.amount&&x.area);
   }finally{clearTimeout(timer)}
 }
 function applyBurden(rows,segmentKey){
@@ -52,32 +72,45 @@ function applyBurden(rows,segmentKey){
   const q1=vals[Math.floor((vals.length-1)*.33)],q2=vals[Math.floor((vals.length-1)*.66)];
   for(const x of rows){const s=x.segments?.[segmentKey];if(!s)continue;s.priceBurden=!Number.isFinite(s.latestMedianPyeong)?'미확인':s.latestMedianPyeong<=q1?'낮음':s.latestMedianPyeong<=q2?'보통':'높음'}
 }
+async function mapInBatches(items,size,fn){
+  const out=[];
+  for(let i=0;i<items.length;i+=size){
+    const part=items.slice(i,i+size);
+    out.push(...await Promise.all(part.map(fn)));
+  }
+  return out;
+}
 
 export default async function handler(req,res){
-  res.setHeader('Cache-Control','public, s-maxage=21600, stale-while-revalidate=43200');
   try{
     const months=closedMonths();
-    const jobs=DISTRICTS.map(async([district,lawdCd])=>{
+    const rows=await mapInBatches(DISTRICTS,4,async([district,lawdCd])=>{
       const results=await Promise.allSettled(months.map(ym=>fetchRows(lawdCd,ym)));
       const byMonth=results.map((r,i)=>({ym:months[i],rows:r.status==='fulfilled'?r.value:[],error:r.status==='rejected'?String(r.reason?.message||r.reason):null}));
       const latest=byMonth[0],prev=byMonth[1],segments={};
       for(const [k,seg] of Object.entries(SEGMENTS))segments[k]={label:seg.label,...summarize(segmentRows(latest.rows,seg),segmentRows(prev.rows,seg))};
       const all=segments.all;
+      const errors=byMonth.filter(x=>x.error).map(x=>({month:x.ym,error:x.error}));
+      const status=errors.length===2?'error':errors.length===1?'partial':(latest.rows.length||prev.rows.length)?'ok':'empty';
       return {
-        district,lawdCd,latestMonth:latest.ym,previousMonth:prev.ym,
+        district,lawdCd,status,latestMonth:latest.ym,previousMonth:prev.ym,
         latestCount:all.latestCount,previousCount:all.previousCount,latestMedianPyeong:all.latestMedianPyeong,previousMedianPyeong:all.previousMedianPyeong,latestMedianAmount:all.latestMedianAmount,changePct:all.changePct,confidence:all.confidence,
         redevelopmentCount:PROJECTS.filter(p=>p.district===district).length,
-        segments,apiErrors:byMonth.filter(x=>x.error).map(x=>({month:x.ym,error:x.error}))
+        segments,apiErrors:errors
       };
     });
-    const rows=await Promise.all(jobs);
     for(const k of Object.keys(SEGMENTS))applyBurden(rows,k);
     rows.sort((a,b)=>(a.segments.all.latestMedianPyeong??Infinity)-(b.segments.all.latestMedianPyeong??Infinity));
+    const okCount=rows.filter(x=>x.status==='ok'||x.status==='partial').length;
+    const errorCount=rows.filter(x=>x.status==='error').length;
+    if(okCount===0){res.setHeader('Cache-Control','no-store');}
+    else{res.setHeader('Cache-Control','public, s-maxage=21600, stale-while-revalidate=43200');}
     return res.status(200).json({
       ok:true,source:'국토교통부 아파트 실거래 Open API',scope:'서울 외곽·중저가 탐색 후보 12개 자치구 비교',
       metricNote:'가격 변화율은 동일 단지 반복매매 지수가 아니라 각 월 신고거래의 평당가 중앙값 변화입니다.',
       segmentNote:'59㎡형은 전용 55~65㎡, 84㎡형은 전용 80~90㎡ 신고거래를 묶어 비교합니다.',
-      cache:'6시간 CDN 캐시',months:months.map(monthLabel),segments:SEGMENTS,rows,generatedAt:new Date().toISOString()
+      cache:okCount?'6시간 CDN 캐시':'오류 응답은 캐시하지 않음',diagnostics:{okCount,errorCount,emptyCount:rows.filter(x=>x.status==='empty').length},
+      months:months.map(monthLabel),segments:SEGMENTS,rows,generatedAt:new Date().toISOString()
     });
-  }catch(e){return res.status(502).json({ok:false,error:String(e?.message||e)})}
+  }catch(e){res.setHeader('Cache-Control','no-store');return res.status(502).json({ok:false,error:String(e?.message||e)})}
 }
