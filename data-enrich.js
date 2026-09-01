@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const e=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const money=n=>n?Number(n).toLocaleString('ko-KR')+'원':'미확인';
+  const money=n=>n!=null&&Number.isFinite(Number(n))?Number(n).toLocaleString('ko-KR')+'원':'미확인';
   const onbidLocalCache=new Map();
 
   async function fetchJson(url){
@@ -51,17 +51,41 @@
     };
   }
 
-  window.loadOnbidDetail=async function(cltrEnc,pbctEnc,btn){
-    const cltr=decodeURIComponent(cltrEnc||''),pbct=decodeURIComponent(pbctEnc||'');
-    const card=btn?.closest('.card'),box=card?.querySelector('.onbid-detail-box');if(!box)return;
-    btn.disabled=true;btn.textContent='상세 조회 중…';box.innerHTML='<div class="loading">온비드 상세 API 조회 중…</div>';
+  function setCardValue(card,selector,value){const el=card?.querySelector(selector);if(el)el.textContent=value}
+  function setDetailExtra(card,x){
+    const box=card?.querySelector('.onbid-detail-box');if(!box)return;
+    box.innerHTML=`<div class="onbid-detail-extra"><span>토지면적<b>${x.landSqm?e(x.landSqm+'㎡'):'미제공'}</b></span><span>건물면적<b>${x.buildingSqm?e(x.buildingSqm+'㎡'):'미제공'}</b></span></div>`;
+  }
+
+  window.ensureOnbidDetail=async function(card){
+    if(!card||card.dataset.detailState==='loading'||card.dataset.detailState==='loaded')return;
+    const cltr=card.dataset.cltr||'',pbct=card.dataset.pbct||'';
+    if(!cltr){card.dataset.detailState='error';return}
+    card.dataset.detailState='loading';
+    ['.onbid-value-appraisal','.onbid-value-minimum','.onbid-value-discount','.onbid-value-end'].forEach(s=>setCardValue(card,s,'조회 중…'));
     try{
       const d=await fetchJson('/api/onbid-detail?cltrMngNo='+encodeURIComponent(cltr)+(pbct?'&pbctCdtnNo='+encodeURIComponent(pbct):''));
       const x=d.item||{};
-      box.innerHTML=`<div class="facts"><div class="fact"><span>상세 감정가</span><b>${money(x.appraisalAmount)}</b></div><div class="fact"><span>상세 최저입찰가</span><b>${money(x.minimumBidAmount)}</b></div><div class="fact"><span>할인율</span><b>${x.discountRate!=null?e(x.discountRate+'%'):'계산 불가'}</b></div><div class="fact"><span>입찰 마감</span><b>${e(x.bidEnd||'상세 API 미제공')}</b></div><div class="fact"><span>토지면적</span><b>${x.landSqm?e(x.landSqm+'㎡'):'미제공'}</b></div><div class="fact"><span>건물면적</span><b>${x.buildingSqm?e(x.buildingSqm+'㎡'):'미제공'}</b></div></div>`;
-      btn.textContent='상세 다시 조회';
-    }catch(err){box.innerHTML='<div class="notice error"><b>상세 API 조회 실패</b><br>'+e(err.message)+'</div>';btn.textContent='상세 다시 조회'}
-    finally{btn.disabled=false}
+      setCardValue(card,'.onbid-value-appraisal',x.appraisalAmount!=null?money(x.appraisalAmount):'미확인');
+      setCardValue(card,'.onbid-value-minimum',x.minimumBidAmount!=null?money(x.minimumBidAmount):'미확인');
+      setCardValue(card,'.onbid-value-discount',x.discountRate!=null?e(x.discountRate+'%'):'계산 불가');
+      setCardValue(card,'.onbid-value-end',e(x.bidEnd||'미확인'));
+      setDetailExtra(card,x);
+      card.dataset.detailState='loaded';
+    }catch(err){
+      ['.onbid-value-appraisal','.onbid-value-minimum','.onbid-value-discount','.onbid-value-end'].forEach(s=>setCardValue(card,s,'조회 실패'));
+      const box=card.querySelector('.onbid-detail-box');if(box)box.innerHTML='<div class="notice error"><b>상세 API 조회 실패</b><br>'+e(err.message)+'</div>';
+      card.dataset.detailState='error';
+    }
+  };
+
+  // 기존 수동 호출 호환용. 실제 UI에서는 펼치기 시 자동 호출합니다.
+  window.loadOnbidDetail=async function(cltrEnc,pbctEnc,target){
+    const card=target?.closest?.('.card')||target;if(!card)return;
+    if(!card.dataset.cltr)card.dataset.cltr=decodeURIComponent(cltrEnc||'');
+    if(!card.dataset.pbct)card.dataset.pbct=decodeURIComponent(pbctEnc||'');
+    card.dataset.detailState='';
+    return window.ensureOnbidDetail(card);
   };
 
   function onbidNotice(d){
@@ -88,8 +112,8 @@
       if(!list)return;
       const warn=onbidNotice(d);
       const cards=items.length?items.map(x=>{
-        const c=encodeURIComponent(x.cltrMngNo||''),b=encodeURIComponent(x.pbctCdtnNo||'');
-        return `<article class="card"><div class="area">${e(x.address||'')}</div><div class="name" style="font-size:15px">${e(x.name||'온비드 부동산 공매')}</div><div class="facts"><div class="fact"><span>감정가</span><b>${x.appraisalAmount?money(x.appraisalAmount):'목록 API 미제공'}</b></div><div class="fact"><span>최저입찰가</span><b>${x.minimumBidAmount?money(x.minimumBidAmount):'상세조회 필요'}</b></div><div class="fact"><span>할인율</span><b>${x.discountRate!=null?e(x.discountRate+'%'):'상세조회 필요'}</b></div><div class="fact"><span>입찰 마감</span><b>${e(x.bidEnd||'상세조회 필요')}</b></div></div><div class="actions"><a target="_blank" href="https://www.onbid.co.kr/">온비드 공식</a><a target="_blank" href="https://map.naver.com/p/search/${encodeURIComponent(x.address||'')}">지도</a><button class="btn" onclick="loadOnbidDetail('${c}','${b}',this)" ${x.cltrMngNo?'':'disabled'}>상세 API</button></div><div class="onbid-detail-box"></div></article>`;
+        const cltr=e(x.cltrMngNo||''),pbct=e(x.pbctCdtnNo||'');
+        return `<article class="card" data-cltr="${cltr}" data-pbct="${pbct}" data-detail-state=""><div class="area">${e(x.address||'')}</div><div class="name" style="font-size:15px">${e(x.name||'온비드 부동산 공매')}</div><div class="facts"><div class="fact"><span>감정가</span><b class="onbid-value-appraisal">${x.appraisalAmount!=null?money(x.appraisalAmount):'미확인'}</b></div><div class="fact"><span>최저입찰가</span><b class="onbid-value-minimum">${x.minimumBidAmount!=null?money(x.minimumBidAmount):'미확인'}</b></div><div class="fact"><span>할인율</span><b class="onbid-value-discount">${x.discountRate!=null?e(x.discountRate+'%'):'미확인'}</b></div><div class="fact"><span>입찰 마감</span><b class="onbid-value-end">${e(x.bidEnd||'미확인')}</b></div></div><div class="actions"><a target="_blank" href="https://www.onbid.co.kr/">온비드 공식</a><a target="_blank" href="https://map.naver.com/p/search/${encodeURIComponent(x.address||'')}">지도</a></div><div class="onbid-detail-box"></div></article>`;
       }).join(''):`<div class="card"><div class="empty"><b>${coverage&&coverage.complete===false?'현재 조회 범위에서 일치 공매 없음':'현재 조회된 공매 0건'}</b><br>${e(d.project?.district||'')} ${e(d.project?.dong||'')} 기준입니다.${coverage&&coverage.complete===false?'<br>전체 페이지 조회가 완료되지 않아 온비드 공식 사이트에서 추가 확인이 필요합니다.':''}</div></div>`;
       list.innerHTML=warn+cards;
     }catch(err){
@@ -97,4 +121,8 @@
       if(list)list.innerHTML='<div class="notice error"><b>온비드 조회 오류</b><br>'+e(err.message)+'</div>';
     }
   };
+
+  const style=document.createElement('style');style.textContent=`
+    .onbid-detail-extra{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.onbid-detail-extra span{display:block;background:#f7f7f7;border:1px solid #e7e7e7;border-radius:10px;padding:9px;font-size:9px;color:#777}.onbid-detail-extra b{display:block;margin-top:2px;font-size:11px;color:#222}
+  `;document.head.appendChild(style);
 })();
