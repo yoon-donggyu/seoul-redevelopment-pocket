@@ -15,7 +15,7 @@
 <body>
 <div class="wrap">
   <div id="home" class="page active">
-    <header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · LIVE DATA</div><h1>서울 재개발 Pocket</h1><div class="sub">신속통합기획·정비사업 + 국토부 실거래 연동</div><div class="toolbar"><div id="updated" class="sub">데이터 불러오는 중…</div><button id="refreshBtn" class="btn dark">새로고침</button></div></header>
+    <header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · LIVE DATA</div><h1>서울 재개발 Pocket</h1><div class="sub">서울 집값 흐름 · 내집마련 · 재개발 · 실거래 · 공매·경매</div><div class="toolbar"><div id="updated" class="sub">데이터 불러오는 중…</div><button id="refreshBtn" class="btn dark">새로고침</button></div></header>
     <section class="section"><div class="notice"><b>데이터 기준</b><br>실거래와 온비드는 <b>Vercel 서버에서 공공 API를 직접 조회</b>합니다. Polygon 내부 판정 전까지 실거래는 법정동 참고값입니다.</div></section>
     <section class="section filterpanel"><div class="searchbox"><input id="projectSearch" type="search" placeholder="사업지명 · 자치구 · 동 · 진행단계 검색" autocomplete="off"><button id="clearSearch" type="button">×</button></div><div id="districtFilters" class="districtfilters"></div></section>
     <section class="section"><div class="section-head"><h2>추적 사업지</h2><small id="count">-</small></div><div id="cards" class="cards"><div class="loading">불러오는 중…</div></div></section>
@@ -37,6 +37,7 @@
 <script src="/onbid-ui.js"></script>
 <script src="/optimize-ui.js"></script>
 <script src="/market-signal.js"></script>
+<script src="/homebuying-board.js"></script>
 <script src="/spatial-ui.js"></script>
 </body>
 </html>
