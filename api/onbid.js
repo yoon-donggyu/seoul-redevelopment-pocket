@@ -5,9 +5,10 @@ const PROJECTS=projectsPayload.projects||[];
 const BASE='https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2';
 const CODES=['0007','0010','0005','0002','0003'];
 const ROWS=200;
-const REGION_MAX_PAGES=5;
-const FALLBACK_MAX_PAGES=10;
+const CACHE_TTL=60*60*1000;
 const xml=new XMLParser({ignoreAttributes:false,trimValues:true});
+const g=globalThis;
+if(!g.__onbidPocketCache)g.__onbidPocketCache={expiresAt:0,rows:[],scans:[],apiErrors:[],promise:null};
 
 function key(){const raw=(process.env.DATA_GO_KR_SERVICE_KEY||'').trim();if(!raw)throw new Error('Vercel 환경변수 DATA_GO_KR_SERVICE_KEY가 없습니다.');try{return decodeURIComponent(raw)}catch{return raw}}
 function arr(v){return v==null?[]:Array.isArray(v)?v:[v]}
@@ -22,56 +23,18 @@ function parseBody(text,ct){const t=String(text||'').trim();if(!t)return{};if((c
 function serviceError(data){const h=data?.response?.header||data?.header||data?.OpenAPI_ServiceResponse?.cmmMsgHeader||data?.openAPI_ServiceResponse?.cmmMsgHeader;if(!h)return null;const code=String(h.resultCode??h.returnReasonCode??'').trim(),msg=String(h.resultMsg??h.errMsg??h.returnAuthMsg??'').trim();if(h.errMsg||h.returnAuthMsg||(code&&!['0','00','000'].includes(code))){const e=new Error(`온비드 API ${code||'오류'}: ${msg||'요청 실패'}`);e.apiCode=code;return e}return null}
 function regionMatch(raw,p){const blob=Object.values(raw||{}).map(v=>typeof v==='object'?JSON.stringify(v):String(v??'')).join(' ').replace(/\s+/g,' ');return blob.includes(p.district)&&blob.includes(p.dong)}
 
-async function requestPage(code,pageNo,p,useRegion){
-  const u=new URL(BASE);
-  const params={serviceKey:key(),pageNo:String(pageNo),numOfRows:String(ROWS),resultType:'json',prptDivCd:code,pvctTrgtYn:'N'};
-  if(useRegion){params.lctnSdnm='서울특별시';params.lctnSggnm=p.district;params.lctnEmdNm=p.dong;}
-  for(const[k,v]of Object.entries(params))u.searchParams.set(k,v);
+async function requestCode(code){
+  const u=new URL(BASE);for(const[k,v]of Object.entries({serviceKey:key(),pageNo:'1',numOfRows:String(ROWS),resultType:'json',prptDivCd:code,pvctTrgtYn:'N'}))u.searchParams.set(k,v);
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),7000);
-  try{
-    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/json,application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/7.9'}});
-    const text=await r.text();if(!r.ok)throw new Error(`HTTP ${r.status}`);
-    const data=parseBody(text,r.headers.get('content-type')||'');const apiErr=serviceError(data);if(apiErr)throw apiErr;
-    return{rows:rowsOf(data),totalCount:totalOf(data)};
-  }finally{clearTimeout(timer)}
-}
+  try{const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/json,application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/8.0'}});const text=await r.text();if(!r.ok)throw new Error(`HTTP ${r.status}`);const data=parseBody(text,r.headers.get('content-type')||'');const apiErr=serviceError(data);if(apiErr)throw apiErr;const rows=rowsOf(data),totalCount=totalOf(data);return{code,rows,totalCount,returned:rows.length,complete:totalCount>0?rows.length>=totalCount:rows.length<ROWS};}finally{clearTimeout(timer)}}
 
-async function requestCode(code,p){
-  let regionError=null;
-  try{
-    const first=await requestPage(code,1,p,true);
-    const matchedFirst=first.rows.filter(x=>regionMatch(x,p));
-    const regionLooksApplied=first.rows.length===0||matchedFirst.length===first.rows.length;
-    if(regionLooksApplied){
-      let matched=[...matchedFirst],returned=first.rows.length,totalCount=first.totalCount,pagesScanned=1;
-      for(let page=2;page<=REGION_MAX_PAGES&&returned<totalCount;page++){
-        const d=await requestPage(code,page,p,true);pagesScanned=page;returned+=d.rows.length;matched.push(...d.rows.filter(x=>regionMatch(x,p)));if(!d.rows.length||d.rows.length<ROWS)break;
-      }
-      return{code,rows:matched,totalCount,returned,pagesScanned,complete:totalCount===0||returned>=totalCount,mode:'region'};
-    }
-  }catch(e){regionError=String(e?.message||e)}
-
-  let matched=[],returned=0,totalCount=0,pagesScanned=0;
-  for(let page=1;page<=FALLBACK_MAX_PAGES;page++){
-    const d=await requestPage(code,page,p,false);pagesScanned=page;totalCount=d.totalCount||totalCount;returned+=d.rows.length;matched.push(...d.rows.filter(x=>regionMatch(x,p)));
-    if(!d.rows.length||d.rows.length<ROWS||(totalCount>0&&returned>=totalCount))break;
-  }
-  return{code,rows:matched,totalCount,returned,pagesScanned,complete:totalCount>0?returned>=totalCount:(pagesScanned<FALLBACK_MAX_PAGES),mode:'national-fallback',regionError};
+async function refreshShared(){
+  const settled=await Promise.allSettled(CODES.map(requestCode));const rows=[],scans=[],apiErrors=[];
+  settled.forEach((r,i)=>{const code=CODES[i];if(r.status==='fulfilled'){rows.push(...r.value.rows);scans.push({propertyCode:code,totalCount:r.value.totalCount,returned:r.value.returned,complete:r.value.complete})}else{apiErrors.push({propertyCode:code,message:String(r.reason?.message||r.reason)});scans.push({propertyCode:code,returned:0,complete:false,error:true})}});
+  g.__onbidPocketCache={expiresAt:Date.now()+CACHE_TTL,rows,scans,apiErrors,promise:null};return g.__onbidPocketCache;
 }
+async function sharedData(){const c=g.__onbidPocketCache;if(c.rows.length&&c.expiresAt>Date.now())return{...c,cacheHit:true};if(c.promise)return c.promise;const promise=refreshShared();c.promise=promise;try{return{...(await promise),cacheHit:false}}finally{if(g.__onbidPocketCache.promise===promise)g.__onbidPocketCache.promise=null}}
 
 function normalize(x){const appraisal=numCI(x,['apslEvlAmt','cltrApslEvlAvgAmt','apslEvlAvgAmt','APSL_EVL_AMT']);const minimum=numCI(x,['lowstBidPrc','minBidPrc','lowstBidAmt','frstBidPrc','LOWST_BID_PRC','MIN_BID_PRC']);const sido=pickCI(x,['lctnSdnm','sdnm','SIDO_NM','CTPV_NM']),district=pickCI(x,['lctnSggnm','sggnm','SGG_NM']),dong=pickCI(x,['lctnEmdNm','emdNm','EMD_NM']);let address=pickCI(x,['sidoSgkEmd','sidoSggEmd','radr','zadr','lctnAddr','addr','address','LDNM_ADRS','ROAD_NM_ADDR']);if(!address)address=[sido,district,dong].filter(Boolean).join(' ');return{cltrMngNo:pickCI(x,['cltrMngNo','CLTR_MNG_NO']),pbctCdtnNo:pickCI(x,['pbctCdtnNo','PBCT_CDTN_NO']),name:pickCI(x,['onbidCltrNm','cltrNm','goodsNm','CLTR_NM'])||'온비드 부동산 공매',address,sido,district,dong,category:pickCI(x,['ctgrFullNm','ctgrNm','CTGR_FULL_NM']),propertyType:pickCI(x,['scrnPrptDvsnNm','prptDvsnNm','PRPT_DVSN_NM']),bidStatus:pickCI(x,['pbctCltrStatNm','pbancPbctCltrStatNm','PBCT_STAT_NM']),appraisalAmount:appraisal,minimumBidAmount:minimum,discountRate:appraisal!=null&&appraisal>0&&minimum!=null?Math.round((1-minimum/appraisal)*1000)/10:null,landSqm:numCI(x,['landSqms','landSqm','LAND_SQMS']),buildingSqm:numCI(x,['bldSqms','bldSqm','BLD_SQMS']),bidStart:pickCI(x,['pbctBegnDtm','bidBegnDtm','PBCT_BEGN_DTM']),bidEnd:pickCI(x,['pbctDdlnDt','pbctLastDdlnDt','bidEndDtm','PBCT_CLS_DTM']),failedBidCount:numCI(x,['usbdNft','uscbdCnt','USBD_NFT'])||0,onbidUrl:'https://www.onbid.co.kr/'};}
 
-export default async function handler(req,res){
-  try{
-    const p=projectById(String(req.query.id||''));if(!p)return res.status(404).json({ok:false,error:'사업지를 찾을 수 없습니다.'});
-    const settled=await Promise.allSettled(CODES.map(code=>requestCode(code,p)));
-    const items=[],apiErrors=[],scans=[],fields=new Set();
-    settled.forEach((r,i)=>{const code=CODES[i];if(r.status==='fulfilled'){const s=r.value;scans.push({propertyCode:code,totalCount:s.totalCount,returned:s.returned,pagesScanned:s.pagesScanned,complete:s.complete,matched:s.rows.length,mode:s.mode,regionError:s.regionError||null});for(const raw of s.rows){Object.keys(raw||{}).forEach(k=>fields.add(k));items.push(normalize(raw))}}else{apiErrors.push({propertyCode:code,stage:'official-list',message:String(r.reason?.message||r.reason),apiCode:String(r.reason?.apiCode||'')||null});scans.push({propertyCode:code,pagesScanned:0,complete:false,matched:0,error:true})}});
-    const seen=new Set(),dedup=[];for(const x of items){const k=[x.cltrMngNo,x.pbctCdtnNo,x.name,x.address].join('|');if(seen.has(k))continue;seen.add(k);dedup.push(x)}
-    dedup.sort((a,b)=>String(a.bidEnd||'9999').localeCompare(String(b.bidEnd||'9999')));
-    const complete=apiErrors.length===0&&scans.every(s=>s.complete===true);
-    const modes=[...new Set(scans.map(s=>s.mode).filter(Boolean))];
-    res.setHeader('Cache-Control','public, s-maxage=300, stale-while-revalidate=600');
-    return res.status(200).json({ok:true,version:'7.9.0',generatedAt:new Date().toISOString(),project:{id:p.id,name:p.name,district:p.district,dong:p.dong},scope:`${p.district} ${p.dong} 현재 입찰중/예정 부동산 공매`,queryMode:modes.join('+')||'unknown',count:dedup.length,items:dedup,apiErrors,scanCoverage:{complete,rowsPerPage:ROWS,scans},availableFields:[...fields].sort(),exactProjectBoundary:false,exactProjectBoundaryNote:'사업구역 Polygon 좌표 매칭 전이므로 동일 구/동 참고 공매입니다.',coverageNote:complete?'조회된 재산유형 범위를 확인했습니다.':'일부 재산유형은 전국 목록 fallback 범위를 끝까지 확인하지 못했습니다.'});
-  }catch(e){res.setHeader('Cache-Control','no-store');return res.status(500).json({ok:false,error:String(e?.message||e),version:'7.9.0'})}
-}
+export default async function handler(req,res){try{const p=projectById(String(req.query.id||''));if(!p)return res.status(404).json({ok:false,error:'사업지를 찾을 수 없습니다.'});const shared=await sharedData();const matched=shared.rows.filter(x=>regionMatch(x,p));const seen=new Set(),items=[];for(const raw of matched){const x=normalize(raw),k=[x.cltrMngNo,x.pbctCdtnNo,x.name,x.address].join('|');if(seen.has(k))continue;seen.add(k);items.push(x)}items.sort((a,b)=>String(a.bidEnd||'9999').localeCompare(String(b.bidEnd||'9999')));const complete=shared.apiErrors.length===0&&shared.scans.every(s=>s.complete===true);res.setHeader('Cache-Control','public, s-maxage=3600, stale-while-revalidate=7200');return res.status(200).json({ok:true,version:'8.0.0',generatedAt:new Date().toISOString(),project:{id:p.id,name:p.name,district:p.district,dong:p.dong},scope:`${p.district} ${p.dong} · 온비드 공용 캐시 목록 내 일치 물건`,queryMode:'shared-server-cache-local-filter',cacheHit:shared.cacheHit,count:items.length,items,apiErrors:shared.apiErrors,scanCoverage:{complete,rowsPerPropertyCode:ROWS,scans:shared.scans},exactProjectBoundary:false,exactProjectBoundaryNote:'사업구역 Polygon 좌표 매칭 전이므로 동일 구/동 참고 공매입니다.',coverageNote:complete?'공용 캐시의 조회 범위를 확인했습니다.':'공용 캐시는 재산유형별 최신 목록 일부를 보관합니다. 0건은 온비드 전체 0건을 의미하지 않습니다.'})}catch(e){res.setHeader('Cache-Control','no-store');return res.status(500).json({ok:false,error:String(e?.message||e),version:'8.0.0'})}}
