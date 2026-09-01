@@ -1,0 +1,12 @@
+{
+  "source": "서울특별시 도시정비사업 통계",
+  "reference": "2026년 3월 기준",
+  "count": 472,
+  "records": [
+    {"code":2065,"district":"중구","name":"신당10","jibun":"신당동236-100","road":"다산로33라길 32-7","publicPrivate":"민간","districtType":"일반","businessType":"주택정비형재개발","stage":"조합설립","existingHouseholds":899,"designationFirst":"2023-06-22","designationLast":"2023-06-22","associationApproval":"2023-12-27","projectApprovalFirst":null,"dispositionApprovalFirst":null,"constructionStart":null,"unitsTotal":1423,"unitsSale":1112,"unitsRental":311},
+    {"code":1133,"district":"동작구","name":"흑석1","jibun":"흑석동43-7","road":"-","publicPrivate":"민간","districtType":"재촉","businessType":"주택정비형재개발","stage":"조합설립","existingHouseholds":493,"designationFirst":"2008-09-11","designationLast":"2020-01-23","associationApproval":"2022-03-31","projectApprovalFirst":null,"dispositionApprovalFirst":null,"constructionStart":null,"unitsTotal":493,"unitsSale":493,"unitsRental":0},
+    {"code":2149,"district":"강북구","name":"번동148번지일대","jibun":"번동148","road":"강북구 오현로25길 22","publicPrivate":"민간","districtType":"일반","businessType":"주택정비형재개발","stage":"추진위","existingHouseholds":0,"designationFirst":null,"designationLast":null,"associationApproval":null,"projectApprovalFirst":null,"dispositionApprovalFirst":null,"constructionStart":null,"unitsTotal":0,"unitsSale":0,"unitsRental":0}
+  ],
+  "stageSummary":{"조합설립":119,"관리처분":70,"사업시행":68,"구역지정":54,"착공":60,"건축심의":40,"추진위":61},
+  "typeSummary":{"도시정비형재개발":132,"주택정비형재개발":153,"아파트지구재건축":42,"단독주택재건축":28,"공동주택재건축":117}
+}
