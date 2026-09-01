@@ -9,7 +9,14 @@ function serviceKey(){
   try{return decodeURIComponent(raw)}catch{return raw}
 }
 function arr(v){return v==null?[]:Array.isArray(v)?v:[v]}
-function num(v){const n=Number(String(v??'').replace(/,/g,'').replace(/[^\d.-]/g,''));return Number.isFinite(n)?n:null}
+function num(v){
+  const raw=String(v??'').trim();
+  if(!raw)return null;
+  const cleaned=raw.replace(/,/g,'').replace(/[^\d.-]/g,'');
+  if(!cleaned||cleaned==='-'||cleaned==='.'||cleaned==='-.')return null;
+  const n=Number(cleaned);
+  return Number.isFinite(n)?n:null;
+}
 function pickCI(obj,keys){const m={};for(const[k,v]of Object.entries(obj||{}))m[k.toLowerCase()]=v;for(const k of keys){const v=m[String(k).toLowerCase()];if(v!=null&&String(v).trim()!=='')return String(v).trim()}return ''}
 function parse(text,ct){const t=String(text||'').trim();if(!t)return{};if((ct||'').includes('json')||t.startsWith('{')||t.startsWith('[')){try{return JSON.parse(t)}catch{}}if(t.startsWith('<')){try{return xml.parse(t)}catch{}}throw new Error('JSON/XML 형식이 아닙니다: '+t.slice(0,120))}
 function extract(data){const body=data?.response?.body||data?.body||data;return arr(body?.items?.item??body?.items??body?.item??body?.data??body?.result??body?.list??[])}
@@ -20,6 +27,11 @@ function normalize(x){
   const ratio=num(pickCI(x,['apslPrcCtrsLowstBidRto']));
   const bidStart=pickCI(x,['cltrBidBgngDt']);
   const bidEnd=pickCI(x,['cltrBidEndDt']);
+  const discountRate=ratio!=null&&ratio>=0&&ratio<=100
+    ?Math.round((100-ratio)*10)/10
+    :(appraisal!=null&&appraisal>0&&minimum!=null&&minimum>=0
+      ?Math.round((1-minimum/appraisal)*1000)/10
+      :null);
   return {
     cltrMngNo:pickCI(x,['cltrMngNo']),
     pbctCdtnNo:pickCI(x,['pbctCdtnNo']),
@@ -31,7 +43,7 @@ function normalize(x){
     appraisalAmount:appraisal,
     minimumBidAmount:minimum,
     minimumBidDisplay:lowstText||null,
-    discountRate:ratio!=null?Math.round((100-ratio)*10)/10:(appraisal&&minimum?Math.round((1-minimum/appraisal)*1000)/10:null),
+    discountRate,
     bidStart,bidEnd,
     landSqm:num(pickCI(x,['landSqms','landSqm'])),
     buildingSqm:num(pickCI(x,['bldSqms','bldSqm'])),
@@ -52,7 +64,7 @@ async function call(cltrMngNo,pbctCdtnNo){
   if(pbctCdtnNo)u.searchParams.set('pbctCdtnNo',pbctCdtnNo);
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
   try{
-    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/json,application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/7.4.1'}});
+    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/json,application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/7.4.2'}});
     const text=await r.text();
     if(!r.ok)throw new Error(`HTTP ${r.status} ${text.slice(0,180)}`);
     const parsed=parse(text,r.headers.get('content-type')||'');
@@ -71,8 +83,8 @@ export default async function handler(req,res){
     const pbctCdtnNo=String(req.query.pbctCdtnNo||'').trim();
     if(!cltrMngNo)return res.status(400).json({ok:false,error:'물건관리번호(cltrMngNo)가 필요합니다.'});
     const items=await call(cltrMngNo,pbctCdtnNo);
-    return res.status(200).json({ok:true,version:'7.4.1',source:'KAMCO 온비드 부동산 물건상세 조회서비스',endpoint:ENDPOINT,cltrMngNo,pbctCdtnNo,item:items[0]||null,items,generatedAt:new Date().toISOString()});
+    return res.status(200).json({ok:true,version:'7.4.2',source:'KAMCO 온비드 부동산 물건상세 조회서비스',endpoint:ENDPOINT,cltrMngNo,pbctCdtnNo,item:items[0]||null,items,generatedAt:new Date().toISOString()});
   }catch(e){
-    return res.status(502).json({ok:false,version:'7.4.1',error:String(e?.message||e),endpoint:ENDPOINT,officialOperation:'getRlstDtlInf2'});
+    return res.status(502).json({ok:false,version:'7.4.2',error:String(e?.message||e),endpoint:ENDPOINT,officialOperation:'getRlstDtlInf2'});
   }
 }
