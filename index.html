@@ -10,8 +10,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/ui-patch.css">
-<link rel="stylesheet" href="/changes-patch.css">
 </head>
 <body>
 <div class="wrap">
@@ -26,11 +24,9 @@
   <div id="dataPage" class="page"><header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · SOURCES</div><h1>공식 데이터</h1><div class="sub">국토부 · 서울시 · 한국부동산원 · 온비드 · 법원 등 신뢰도 높은 자료원</div></header><section class="section"><div class="notice"><b>수집 원칙</b><br>공식기관·공공데이터를 우선 사용합니다. 공개 API나 이용권한이 명확하지 않은 민간 사이트는 무단 자동수집하지 않습니다.</div></section><section class="section"><div class="section-head"><h2>연결 현황</h2><small id="sourceStamp">불러오는 중…</small></div><div id="sourceList" class="list"><div class="loading">자료원 불러오는 중…</div></div></section><section class="section"><div class="section-head"><h2>정비사업 데이터</h2><small id="renewalCount">-</small></div><div id="renewalSummary" class="card"></div></section></div>
   <div id="statusPage" class="page"><header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · STATUS</div><h1>API · 데이터 상태</h1><div class="sub">백엔드 연결 상태 + 공식 데이터 출처</div></header><section class="section"><div class="section-head"><h2>연동 상태</h2><small id="statusStamp">-</small></div><div id="statusBox" class="data-status"></div></section></div>
   <div id="detail" class="page"><header><button class="backbtn" onclick="goBackFromDetail()">← 뒤로가기</button><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · PROJECT</div><h1 id="detailTitle">사업지 상세</h1><div id="detailSub" class="sub"></div></header><main id="detailMain"><div class="loading">불러오는 중…</div></main></div>
-  <div id="newPage" class="page"><header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · NEW</div><h1>신규 사업지</h1><div class="sub">최근 선정 사업지를 압축해서 보고 필요할 때 펼쳐봅니다.</div></header><section class="section"><div class="notice"><b>새사업지 보기</b><br>선정일이 최근인 사업지부터 표시하며 각 사업지는 기본 접힘 상태입니다.</div></section><section class="section"><div id="newList" class="cards"></div></section></div>
+  <div id="newPage" class="page"><header><div class="eyebrow">SEOUL REDEVELOPMENT POCKET · NEW</div><h1>신규 사업지</h1><div class="sub">최근 선정 사업지를 압축해서 보고 필요할 때 펼쳐봅니다.</div></header><section class="section"><div class="notice"><b>새사업지 보기</b><br>선정일이 최근인 사업지부터 표시합니다.</div></section><section class="section"><div id="newList" class="cards"></div></section></div>
 </div>
 <div class="bottom"><nav class="bottomnav"><button data-page="home" class="on">홈</button><button data-page="newPage">새사업지</button><button data-page="market">실거래</button><button data-page="onbidPage">공매</button><button data-page="dataPage">자료</button><button data-page="statusPage" class="dev" title="API·데이터 상태">⚙</button></nav></div>
 <script src="/app.js"></script>
-<script src="/ui-patch.js"></script>
-<script src="/changes-patch.js"></script>
 </body>
 </html>
