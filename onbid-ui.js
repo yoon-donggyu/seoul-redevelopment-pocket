@@ -61,24 +61,35 @@
       box.innerHTML='<div class="onbid-filter-title">공매 결과</div><div class="onbid-chiprow" id="onbidResultChips"></div>';
       list.parentNode.insertBefore(box,list);
     }
-    const names=['전체','가격 확인','상세조회 필요','마감일 확인'];
+    const names=['전체','가격 확인','미확인','마감일 확인'];
     const chips=document.getElementById('onbidResultChips');
     chips.innerHTML=names.map(x=>`<button type="button" class="onbid-chip ${x===resultFilter?'on':''}" data-rf="${x}">${x}</button>`).join('');
     chips.querySelectorAll('button').forEach(b=>b.onclick=()=>{resultFilter=b.dataset.rf;ensureResultFilters();applyResultFilters()});
   }
   function classifyCard(card){
-    const t=card.textContent||'';
-    const need=t.includes('상세조회 필요')||t.includes('목록 API 미제공');
-    const hasPrice=!need && /감정가|최저입찰가/.test(t);
-    const hasEnd=!t.includes('입찰 마감상세조회 필요')&&!t.includes('입찰 마감 미제공')&&!t.includes('입찰 마감상세 API 미제공')&&/입찰 마감/.test(t);
-    return {need,hasPrice,hasEnd};
+    const values=[...card.querySelectorAll('.fact b')].map(x=>(x.textContent||'').trim());
+    const unknown=values.some(v=>/미확인|조회 실패|조회 중|계산 불가|미제공/.test(v));
+    const appraisal=(card.querySelector('.onbid-value-appraisal')?.textContent||'').trim();
+    const minimum=(card.querySelector('.onbid-value-minimum')?.textContent||'').trim();
+    const end=(card.querySelector('.onbid-value-end')?.textContent||'').trim();
+    const moneyOk=v=>/\d/.test(v)&&!/미확인|조회 실패|조회 중|미제공/.test(v);
+    const hasPrice=moneyOk(appraisal)||moneyOk(minimum);
+    const hasEnd=/\d/.test(end)&&!/미확인|조회 실패|조회 중|미제공/.test(end);
+    return {unknown,hasPrice,hasEnd};
   }
   function compactResultCards(){
     const list=document.getElementById('onbidList');if(!list)return;
     list.querySelectorAll('article.card').forEach(card=>{
       if(card.dataset.onbidCompact)return;card.dataset.onbidCompact='1';card.classList.add('onbid-result-card','is-onbid-collapsed');
       const b=document.createElement('button');b.type='button';b.className='onbid-morebtn';b.textContent='펼치기';
-      b.onclick=()=>{const closed=card.classList.toggle('is-onbid-collapsed');b.textContent=closed?'펼치기':'접기'};
+      b.onclick=async()=>{
+        const closed=card.classList.toggle('is-onbid-collapsed');
+        b.textContent=closed?'펼치기':'접기';
+        if(!closed&&typeof window.ensureOnbidDetail==='function'){
+          await window.ensureOnbidDetail(card);
+          applyResultFilters();
+        }
+      };
       (card.querySelector('.name')||card.firstElementChild||card).after(b);
     });
   }
@@ -87,7 +98,7 @@
     list.querySelectorAll('article.card').forEach(card=>{
       const c=classifyCard(card);let ok=true;
       if(resultFilter==='가격 확인')ok=c.hasPrice;
-      if(resultFilter==='상세조회 필요')ok=c.need;
+      if(resultFilter==='미확인')ok=c.unknown;
       if(resultFilter==='마감일 확인')ok=c.hasEnd;
       card.style.display=ok?'':'none';if(ok)shown++;
     });
