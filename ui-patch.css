@@ -1,0 +1,5 @@
+/* v7.1 UI patch */
+.detail-back-section{padding-top:2px;padding-bottom:28px}
+.bottom-backbtn{width:100%;border:0;border-radius:14px;background:#202124;color:#fff;padding:15px 14px;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.10)}
+.bottom-backbtn:active{transform:scale(.99)}
+.bottomnav{grid-template-columns:repeat(4,1fr) 34px!important}
