@@ -4,7 +4,7 @@ import projectsPayload from '../data/projects.json' with { type: 'json' };
 const PROJECTS=projectsPayload.projects||[];
 const BASE='https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2';
 const CODES=['0007','0010','0005','0002','0003'];
-const ROWS=100;
+const ROWS=1000;
 const xml=new XMLParser({ignoreAttributes:false,trimValues:true});
 
 function key(){const raw=(process.env.DATA_GO_KR_SERVICE_KEY||'').trim();if(!raw)throw new Error('Vercel 환경변수 DATA_GO_KR_SERVICE_KEY가 없습니다.');try{return decodeURIComponent(raw)}catch{return raw}}
@@ -22,17 +22,16 @@ function regionMatch(raw,p){const blob=Object.values(raw||{}).map(v=>typeof v===
 
 async function requestCode(code,p){
   const u=new URL(BASE);
-  // 차세대 목록 API 공식 문서의 필수/공통 파라미터만 사용한다.
   for(const[k,v]of Object.entries({serviceKey:key(),pageNo:'1',numOfRows:String(ROWS),resultType:'json',prptDivCd:code,pvctTrgtYn:'N'}))u.searchParams.set(k,v);
-  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),8000);
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),10000);
   try{
-    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/json,application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/7.6'}});
+    const r=await fetch(u,{signal:ctrl.signal,headers:{Accept:'application/json,application/xml,text/xml,*/*','User-Agent':'SeoulRedevelopmentPocket/7.7'}});
     const text=await r.text();
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=parseBody(text,r.headers.get('content-type')||'');
     const apiErr=serviceError(data);if(apiErr)throw apiErr;
     const rawRows=rowsOf(data),matched=rawRows.filter(x=>regionMatch(x,p)),totalCount=totalOf(data);
-    return{code,rows:matched,totalCount,returned:rawRows.length,complete:totalCount<=rawRows.length};
+    return{code,rows:matched,totalCount,returned:rawRows.length,complete:totalCount>0?totalCount<=rawRows.length:rawRows.length<ROWS};
   }finally{clearTimeout(timer)}
 }
 
@@ -54,6 +53,6 @@ export default async function handler(req,res){
     dedup.sort((a,b)=>String(a.bidEnd||'9999').localeCompare(String(b.bidEnd||'9999')));
     const complete=apiErrors.length===0&&scans.every(s=>s.complete===true);
     res.setHeader('Cache-Control','public, s-maxage=900, stale-while-revalidate=1800');
-    return res.status(200).json({ok:true,version:'7.6.0',generatedAt:new Date().toISOString(),project:{id:p.id,name:p.name,district:p.district,dong:p.dong},scope:`${p.district} ${p.dong} · 온비드 목록 조회 범위 내 일치 물건`,queryMode:'official-first-page-local-filter',count:dedup.length,items:dedup,apiErrors,scanCoverage:{complete,maxPagesPerPropertyCode:1,scans},availableFields:[...fields].sort(),exactProjectBoundary:false,exactProjectBoundaryNote:'사업구역 Polygon 좌표 매칭 전이므로 동일 구/동 참고 공매입니다.',coverageNote:complete?'조회된 유형의 전체 목록 범위 확인':'온비드 전국 목록의 첫 페이지 범위에서 지역 일치 물건을 찾습니다. 0건은 전체 공매 0건을 뜻하지 않을 수 있습니다.'});
-  }catch(e){res.setHeader('Cache-Control','no-store');return res.status(500).json({ok:false,error:String(e?.message||e),version:'7.6.0'})}
+    return res.status(200).json({ok:true,version:'7.7.0',generatedAt:new Date().toISOString(),project:{id:p.id,name:p.name,district:p.district,dong:p.dong},scope:`${p.district} ${p.dong} · 온비드 목록 조회 범위 내 일치 물건`,queryMode:'official-large-page-local-filter',count:dedup.length,items:dedup,apiErrors,scanCoverage:{complete,maxRowsPerPropertyCode:ROWS,scans},availableFields:[...fields].sort(),exactProjectBoundary:false,exactProjectBoundaryNote:'사업구역 Polygon 좌표 매칭 전이므로 동일 구/동 참고 공매입니다.',coverageNote:complete?'조회된 재산유형의 전체 목록 범위를 확인했습니다.':'온비드가 반환한 대용량 목록 범위에서 지역 일치 물건을 찾습니다. 범위가 잘린 유형의 0건은 확정값이 아닙니다.'});
+  }catch(e){res.setHeader('Cache-Control','no-store');return res.status(500).json({ok:false,error:String(e?.message||e),version:'7.7.0'})}
 }
