@@ -2,12 +2,8 @@ name: Update OnBid Dataset
 
 on:
   schedule:
-    - cron: '0 16 * * *' # 01:00 KST daily
+    - cron: '0 16 * * *' # 매일 01:00 KST
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/onbid-cache-warm.yml'
-      - 'api/onbid.js'
 
 permissions:
   contents: write
@@ -23,9 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Wait for Vercel deployment
-        run: sleep 25
-
       - name: Collect complete OnBid dataset
         shell: bash
         run: |
@@ -33,12 +26,11 @@ jobs:
           BASE='https://seoul-redevelopment-pocket-ydg6042-6317.vercel.app'
           TMP="$(mktemp -d)"
           CODES=(0007 0010 0005 0002 0003)
-          n=0
 
           fetch_page() {
             local code="$1" page="$2" out="$3"
             echo "fetch code=$code page=$page"
-            curl -fsSL --retry 8 --retry-all-errors --retry-delay 6 --max-time 90 \
+            curl -fsSL --retry 8 --retry-all-errors --retry-delay 8 --max-time 120 \
               "$BASE/api/onbid?code=$code&page=$page" -o "$out"
             jq -e '.ok == true and (.items|type=="array")' "$out" >/dev/null
           }
@@ -46,18 +38,19 @@ jobs:
           for code in "${CODES[@]}"; do
             first="$TMP/page-${code}-1.json"
             fetch_page "$code" 1 "$first"
-            n=$((n+1))
             total="$(jq -r '.totalCount // 0' "$first")"
             rows="$(jq -r '.rowsPerPage // 1000' "$first")"
             pages=$(( (total + rows - 1) / rows ))
             if [ "$pages" -lt 1 ]; then pages=1; fi
             echo "code=$code total=$total pages=$pages"
+
             for page in $(seq 2 "$pages"); do
-              sleep 3
+              sleep 5
               fetch_page "$code" "$page" "$TMP/page-${code}-${page}.json"
-              n=$((n+1))
             done
-            sleep 3
+
+            # 재산유형 전환 시 API 요청 간격 확보
+            sleep 5
           done
 
           mkdir -p data
@@ -66,7 +59,7 @@ jobs:
             {
               ok:true,
               ready:true,
-              version:"static-1.0",
+              version:"static-1.1",
               generatedAt:(now|todateiso8601),
               source:"대한민국 온비드 공공데이터 API",
               count:([.[].items[]?] | unique_by(key) | length),
