@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "ready": false,
+  "version": "static-1.0",
+  "generatedAt": null,
+  "source": "대한민국 온비드 공공데이터 API",
+  "count": 0,
+  "items": [],
+  "apiErrors": [],
+  "scanCoverage": {
+    "complete": false,
+    "pagesFetched": 0
+  }
+}
