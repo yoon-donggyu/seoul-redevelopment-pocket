@@ -14,8 +14,9 @@
     if(list)list.innerHTML='<div class="loading">선택한 지역의 온비드 공매를 조회 중입니다.</div>';
 
     try{
-      const u=new URL('/api/pocket',location.origin);
-      u.searchParams.set('action','onbid');
+      // /api/pocket의 지역 파라미터 방식은 온비드 API에서 HTTP 400을 낼 수 있어
+      // 지역 파라미터 없이 조회 후 서버에서 구·동을 필터링하는 /api/onbid를 사용한다.
+      const u=new URL('/api/onbid',location.origin);
       u.searchParams.set('id',id);
       const r=await fetch(u,{cache:'no-store'});
       const text=await r.text();
