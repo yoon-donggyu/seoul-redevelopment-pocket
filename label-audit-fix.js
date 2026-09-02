@@ -19,9 +19,6 @@
       replaceText(el,'사업단계·거래량·데이터 완성도 참고점수','사업단계·참고 거래량·데이터 완성도 기반 앱 점수');
     });
 
-    const court=document.querySelector('.court-status span');
-    if(court)court.textContent='현재 앱에는 법원 경매 자동목록이 연결되어 있지 않습니다. 공식 연계 방법과 이용조건이 확인될 때까지 법원 공식 사이트 링크만 제공합니다.';
-
     const guide=document.getElementById('guidePage');
     if(guide){
       guide.querySelectorAll('details').forEach(d=>{
@@ -38,10 +35,56 @@
     }
   }
 
+  function fixAuctionTabs(){
+    const page=document.getElementById('onbidPage');
+    const sw=document.getElementById('propertySourceSwitch');
+    const court=document.getElementById('courtAuctionSection');
+    if(!page||!sw||!court)return;
+
+    // court-auction-ui.js가 만든 실제 법원경매 보드는 온비드 섹션에서 제외한다.
+    court.classList.remove('onbid-source-section');
+
+    // optimize-ui.js가 예전에 만든 안내용 임시 법원경매 박스는 제거한다.
+    page.querySelectorAll('.court-auction-section').forEach(el=>{
+      if(el!==court)el.remove();
+    });
+
+    const header=page.querySelector('header');
+    const title=header?.querySelector('h1');
+    const sub=header?.querySelector('.sub');
+    const onbidSections=[...page.children].filter(el=>
+      el.tagName==='SECTION' &&
+      el!==sw &&
+      el!==court &&
+      !el.classList.contains('court-auction-section')
+    );
+
+    function setSource(source){
+      sw.querySelectorAll('button[data-source]').forEach(b=>b.classList.toggle('on',b.dataset.source===source));
+      onbidSections.forEach(el=>{el.style.display=source==='onbid'?'':'none'});
+      court.style.display=source==='court'?'':'none';
+      if(title)title.textContent=source==='court'?'법원 경매':'온비드 공매';
+      if(sub)sub.textContent=source==='court'?'서울 5개 지방법원 경매 데이터를 조회합니다.':'사업지를 선택하면 해당 구·동의 온비드 공매를 조회합니다.';
+    }
+
+    sw.querySelectorAll('button[data-source]').forEach(b=>{
+      b.onclick=()=>setSource(b.dataset.source);
+    });
+
+    const selected=sw.querySelector('button.on[data-source]')?.dataset.source||'onbid';
+    setSource(selected);
+  }
+
   function wrap(name){
     const old=window[name];if(typeof old!=='function')return;
-    window[name]=function(...args){const r=old.apply(this,args);Promise.resolve(r).finally(()=>setTimeout(fixLabels,0));return r};
+    window[name]=function(...args){
+      const r=old.apply(this,args);
+      Promise.resolve(r).finally(()=>setTimeout(()=>{fixLabels();fixAuctionTabs()},0));
+      return r;
+    };
   }
+
   ['renderDashboard','applyFilter','renderNew','renderMarket','renderDetail','showPage'].forEach(wrap);
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(fixLabels,0),{once:true});else setTimeout(fixLabels,0);
+  const boot=()=>setTimeout(()=>{fixLabels();fixAuctionTabs()},0);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
