@@ -5,7 +5,7 @@ const PROJECTS=projectsPayload.projects||[];
 const BASE='https://apis.data.go.kr/B010003/OnbidRlstListSrvc2/getRlstCltrList2';
 const CODES=['0007','0010','0005','0002','0003'];
 const ROWS=200;
-const CACHE='public, s-maxage=86400, stale-while-revalidate=86400';
+const CACHE='public, s-maxage=86400';
 const xml=new XMLParser({ignoreAttributes:false,trimValues:true});
 
 function key(){const raw=(process.env.DATA_GO_KR_SERVICE_KEY||'').trim();if(!raw)throw new Error('Vercel 환경변수 DATA_GO_KR_SERVICE_KEY가 없습니다.');try{return decodeURIComponent(raw)}catch{return raw}}
@@ -48,14 +48,14 @@ export default async function handler(req,res){
     if(String(req.query.manifest||'')==='1'){
       const settled=await Promise.allSettled(CODES.map(async code=>{const first=await requestPage(code,1);return{code,totalCount:first.totalCount,pages:Math.max(1,Math.ceil(first.totalCount/ROWS)),firstItems:first.rows.map(normalize)}}));
       const scans=[],apiErrors=[];for(let i=0;i<settled.length;i++){const r=settled[i];if(r.status==='fulfilled')scans.push(r.value);else apiErrors.push({propertyCode:CODES[i],message:String(r.reason?.message||r.reason)})}
-      return res.status(200).json({ok:true,version:'9.0.0',generatedAt:new Date().toISOString(),rowsPerPage:ROWS,cacheHours:24,propertyCodes:CODES,scans,apiErrors,complete:apiErrors.length===0});
+      return res.status(200).json({ok:true,version:'9.0.1',generatedAt:new Date().toISOString(),rowsPerPage:ROWS,cacheHours:24,propertyCodes:CODES,scans,apiErrors,complete:apiErrors.length===0});
     }
     const code=String(req.query.code||''),pageNo=Math.max(1,Number(req.query.page||1)||1);
-    if(code){if(!CODES.includes(code))return res.status(400).json({ok:false,error:'지원하지 않는 재산유형 코드입니다.'});const d=await requestPage(code,pageNo);return res.status(200).json({ok:true,version:'9.0.0',generatedAt:new Date().toISOString(),propertyCode:code,page:pageNo,rowsPerPage:ROWS,totalCount:d.totalCount,count:d.rows.length,items:d.rows.map(normalize)});}
+    if(code){if(!CODES.includes(code))return res.status(400).json({ok:false,error:'지원하지 않는 재산유형 코드입니다.'});const d=await requestPage(code,pageNo);return res.status(200).json({ok:true,version:'9.0.1',generatedAt:new Date().toISOString(),propertyCode:code,page:pageNo,rowsPerPage:ROWS,totalCount:d.totalCount,count:d.rows.length,items:d.rows.map(normalize)});}
     const p=projectById(String(req.query.id||''));if(!p)return res.status(404).json({ok:false,error:'사업지를 찾을 수 없습니다.'});
     const manifest=await Promise.all(CODES.map(async code=>{const first=await requestPage(code,1);return{code,totalCount:first.totalCount,pages:Math.max(1,Math.ceil(first.totalCount/ROWS)),first:first.rows.map(normalize)}}));
     const items=[];for(const m of manifest){items.push(...m.first);for(let start=2;start<=m.pages;start+=8){const pages=Array.from({length:Math.min(8,m.pages-start+1)},(_,i)=>start+i);const got=await Promise.allSettled(pages.map(n=>requestPage(m.code,n)));for(const r of got)if(r.status==='fulfilled')items.push(...r.value.rows.map(normalize))}}
     const filtered=dedupe(items).filter(x=>match(x,p)).sort((a,b)=>String(a.bidEnd||'9999').localeCompare(String(b.bidEnd||'9999')));
-    return res.status(200).json({ok:true,version:'9.0.0',generatedAt:new Date().toISOString(),project:{id:p.id,name:p.name,district:p.district,dong:p.dong},scope:`${p.district} ${p.dong} 전국 전체 페이지 수집 후 필터`,queryMode:'full-paged-cache-24h',count:filtered.length,items:filtered,scanCoverage:{complete:true,rowsPerPage:ROWS,scans:manifest.map(x=>({propertyCode:x.code,totalCount:x.totalCount,pages:x.pages}))},exactProjectBoundary:false,exactProjectBoundaryNote:'사업구역 Polygon 좌표 매칭 전이므로 동일 구/동 참고 공매입니다.'});
-  }catch(e){res.setHeader('Cache-Control','no-store');return res.status(500).json({ok:false,error:String(e?.message||e),version:'9.0.0'})}
+    return res.status(200).json({ok:true,version:'9.0.1',generatedAt:new Date().toISOString(),project:{id:p.id,name:p.name,district:p.district,dong:p.dong},scope:`${p.district} ${p.dong} 전국 전체 페이지 수집 후 필터`,queryMode:'full-paged-cache-24h',count:filtered.length,items:filtered,scanCoverage:{complete:true,rowsPerPage:ROWS,scans:manifest.map(x=>({propertyCode:x.code,totalCount:x.totalCount,pages:x.pages}))},exactProjectBoundary:false,exactProjectBoundaryNote:'사업구역 Polygon 좌표 매칭 전이므로 동일 구/동 참고 공매입니다.'});
+  }catch(e){res.setHeader('Cache-Control','no-store');return res.status(500).json({ok:false,error:String(e?.message||e),version:'9.0.1'})}
 }
