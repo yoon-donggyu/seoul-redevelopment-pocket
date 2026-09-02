@@ -1,0 +1,31 @@
+name: Warm OnBid Cache
+
+on:
+  schedule:
+    - cron: '15 21 * * *' # 06:15 KST daily
+  workflow_dispatch:
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Warm full OnBid dataset cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://seoul-redevelopment-pocket.vercel.app'
+          echo 'Fetching manifest...'
+          manifest="$(curl -fsSL --retry 3 --retry-delay 3 "$BASE/api/onbid?manifest=1")"
+          echo "$manifest" | jq '{version,generatedAt,cacheHours,scans:[.scans[]|{code,totalCount,pages}]}'
+
+          echo "$manifest" | jq -r '.scans[] | [.code, (.pages|tostring)] | @tsv' | while IFS=$'\t' read -r code pages; do
+            echo "Warming code=$code pages=$pages"
+            seq 1 "$pages" | xargs -P 8 -I{} sh -c '
+              code="$1"; page="$2"; base="$3"
+              curl -fsSL --retry 3 --retry-delay 2 "$base/api/onbid?code=$code&page=$page" >/dev/null
+              echo "warmed $code page $page"
+            ' _ "$code" {} "$BASE"
+          done
+
+          echo 'OnBid cache warm complete.'
