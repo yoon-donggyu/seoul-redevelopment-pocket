@@ -2,7 +2,7 @@ name: Warm OnBid Cache
 
 on:
   schedule:
-    - cron: '15 21 * * *' # 06:15 KST daily
+    - cron: '0 16 * * *' # 01:00 KST daily
   workflow_dispatch:
 
 jobs:
