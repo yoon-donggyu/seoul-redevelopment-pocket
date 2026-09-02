@@ -22,12 +22,12 @@
     const {result}=onbidParts();
     if(!result)return null;
     let btn=document.getElementById('onbidBackToAreas');
-    if(btn)return btn;
+    if(btn){btn.textContent='← 뒤로가기';return btn;}
     btn=document.createElement('button');
     btn.type='button';
     btn.id='onbidBackToAreas';
     btn.className='onbid-back-to-areas';
-    btn.textContent='← 지역 다시 선택';
+    btn.textContent='← 뒤로가기';
     btn.onclick=()=>showOnbidChooser(true);
     result.prepend(btn);
     return btn;
@@ -51,55 +51,21 @@
   }
 
   const oldDashboard=window.renderDashboard;
-  if(typeof oldDashboard==='function'){
-    window.renderDashboard=function(...args){
-      const r=oldDashboard.apply(this,args);
-      setTimeout(moveHomeToolsToTop,0);
-      return r;
-    };
-  }
-
+  if(typeof oldDashboard==='function')window.renderDashboard=function(...args){const r=oldDashboard.apply(this,args);setTimeout(moveHomeToolsToTop,0);return r};
   const oldChooser=window.renderOnbidChooser;
-  if(typeof oldChooser==='function'){
-    window.renderOnbidChooser=function(...args){
-      const r=oldChooser.apply(this,args);
-      setTimeout(()=>showOnbidChooser(false),0);
-      return r;
-    };
-  }
-
+  if(typeof oldChooser==='function')window.renderOnbidChooser=function(...args){const r=oldChooser.apply(this,args);setTimeout(()=>showOnbidChooser(false),0);return r};
   const oldLoad=window.loadOnbidProject;
-  if(typeof oldLoad==='function'){
-    window.loadOnbidProject=async function(...args){
-      showOnbidResults();
-      try{
-        return await oldLoad.apply(this,args);
-      }finally{
-        setTimeout(()=>{
-          ensureOnbidBackButton();
-          window.scrollTo({top:0,left:0,behavior:'auto'});
-        },0);
-      }
-    };
-  }
+  if(typeof oldLoad==='function')window.loadOnbidProject=async function(...args){showOnbidResults();try{return await oldLoad.apply(this,args)}finally{setTimeout(()=>{ensureOnbidBackButton();window.scrollTo({top:0,left:0,behavior:'auto'})},0)}};
 
-  // 공매/경매 소스 전환 후 온비드로 돌아오면 지역 선택 화면부터 시작합니다.
-  document.addEventListener('click',e=>{
-    const btn=e.target?.closest?.('#propertySourceSwitch button[data-source="onbid"]');
-    if(btn)setTimeout(()=>showOnbidChooser(true),0);
-  });
+  document.addEventListener('click',e=>{const btn=e.target?.closest?.('#propertySourceSwitch button[data-source="onbid"]');if(btn)setTimeout(()=>showOnbidChooser(true),0)});
 
   const style=document.createElement('style');
   style.textContent=`
     #home .filterpanel>#homeTools{margin:0 0 10px!important;padding-bottom:9px;border-bottom:1px solid #e8e8e8}
-    .onbid-back-to-areas{width:100%;border:1px solid #d8d8d8;background:#fff;color:#222;border-radius:13px;padding:12px 14px;margin:0 0 10px;font-size:11px;font-weight:900;text-align:left;cursor:pointer}
-    .onbid-back-to-areas:active{transform:translateY(1px)}
+    .onbid-back-to-areas{width:100%;border:1px solid #202124;background:#202124;color:#fff;border-radius:13px;padding:13px 15px;margin:0 0 10px;font-size:11px;font-weight:900;text-align:left;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+    .onbid-back-to-areas:hover{background:#111;color:#fff}.onbid-back-to-areas:active{transform:translateY(1px)}
   `;
   document.head.appendChild(style);
 
-  setTimeout(()=>{
-    moveHomeToolsToTop();
-    const {result}=onbidParts();
-    if(result)showOnbidChooser(false);
-  },0);
+  setTimeout(()=>{moveHomeToolsToTop();const {result}=onbidParts();if(result)showOnbidChooser(false)},0);
 })();
