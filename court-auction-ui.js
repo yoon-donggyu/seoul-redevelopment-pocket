@@ -23,7 +23,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const money = v => {
     const n = Number(String(v ?? '').replace(/[^0-9]/g,''));
-    return n ? `${Math.round(n / 10000).toLocaleString('ko-KR')}만원` : '미확인';
+    return n ? `${n.toLocaleString('ko-KR')}원` : '미확인';
   };
   const extractDistrict = address => {
     const m = String(address || '').match(/서울(?:특별시|시)?\s*([가-힣]+구)/);
