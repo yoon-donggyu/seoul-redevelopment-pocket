@@ -36,6 +36,13 @@
   function selectProject(id){const p=byId(id);if(!p)return;const sheet=document.getElementById('mapSheet');sheet.innerHTML=sheetHTML(p);sheet.classList.add('open');sheet.querySelector('.sheet-detail').onclick=()=>window.openDetail?.(p.id);const feature=allPolygons.find(f=>String(f.properties?.projectId)===String(id));if(feature){const c=polygonCenter(feature);map.easeTo({center:c,zoom:Math.max(map.getZoom(),15),duration:500})}}
   async function init(){
     if(map||!window.maplibregl)return;if(!loaded)await loadFeatures();
+    if(typeof maplibregl.supported==='function'&&!maplibregl.supported()){
+      const root=document.getElementById('projectMap'),count=document.getElementById('mapCount');
+      if(root)root.innerHTML='<div class="map-fallback"><b>이 기기에서는 지도를 표시할 수 없습니다.</b><span>그래픽 가속(WebGL)을 사용할 수 없어 사업지 목록으로 안내합니다.</span><button type="button" data-fallback-list>사업지 목록 보기</button></div>';
+      if(count)count.textContent=`전체 ${allPolygons.length}곳`;
+      root?.querySelector('[data-fallback-list]')?.addEventListener('click',()=>window.showPage?.('newPage'));
+      return;
+    }
     map=new maplibregl.Map({container:'projectMap',style:baseStyle,center:[126.978,37.5665],zoom:10.3,minZoom:8,maxZoom:19,attributionControl:false});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');map.addControl(new maplibregl.AttributionControl({compact:true}),'top-right');
     map.on('load',()=>{
