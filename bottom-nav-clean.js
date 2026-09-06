@@ -9,7 +9,7 @@
 
   nav.innerHTML = `
     <button type="button" class="compact-nav-item on" data-go="home"><span class="compact-nav-icon">⌂</span><span>홈</span></button>
-    <button type="button" class="compact-nav-item" data-go="newPage"><span class="compact-nav-icon">▦</span><span>사업지</span></button>
+    <button type="button" class="compact-nav-item" data-go="mapPage"><span class="compact-nav-icon">⌖</span><span>지도</span></button>
     <button type="button" class="compact-nav-item" data-go="market"><span class="compact-nav-icon">↗</span><span>실거래</span></button>
     <button type="button" class="compact-nav-item" data-go="onbidPage"><span class="compact-nav-icon">⚖</span><span>공매·경매</span></button>
     <button type="button" class="compact-nav-item" id="moreNavBtn"><span class="compact-nav-icon">•••</span><span>더보기</span></button>
@@ -24,6 +24,7 @@
       <div class="more-nav-handle"></div>
       <div class="more-nav-title">더보기</div>
       <div class="more-nav-grid">
+        <button type="button" data-more-go="newPage"><b>▦</b><span>사업지 목록</span><small>전체 사업지 카드 보기</small></button>
         <button type="button" data-more-go="reportPage"><b>▤</b><span>재개발 리포트</span><small>종합 리포트 보기</small></button>
         <button type="button" data-more-go="dataPage"><b>▣</b><span>공식 자료</span><small>데이터 출처 확인</small></button>
         <button type="button" data-more-go="guidePage"><b>?</b><span>가이드</span><small>앱 사용법 보기</small></button>
@@ -34,7 +35,7 @@
   `;
   document.body.appendChild(sheet);
 
-  const primaryPages = new Set(['home','newPage','market','onbidPage']);
+  const primaryPages = new Set(['home','mapPage','market','onbidPage']);
   const moreBtn = document.getElementById('moreNavBtn');
 
   function currentPage() {
