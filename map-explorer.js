@@ -28,6 +28,12 @@
     const count=document.getElementById('mapCount');if(count)count.textContent=`화면 ${visible.length}곳 · 전체 ${filtered.length}곳`;
   }
   function buildFilters(){const root=document.getElementById('mapDistrictFilters');if(!root)return;const values=['전체',...new Set(allPolygons.map(f=>f.properties?.district).filter(Boolean))].sort((a,b)=>a==='전체'?-1:b==='전체'?1:a.localeCompare(b,'ko'));root.innerHTML=values.map(x=>`<button class="districtchip ${x===selectedDistrict?'on':''}" data-map-district="${esc(x)}">${esc(x)}</button>`).join('');root.querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedDistrict=b.dataset.mapDistrict;buildFilters();syncSources()})}
+  function showFallback(){
+    const root=document.getElementById('projectMap'),count=document.getElementById('mapCount');
+    if(root)root.innerHTML='<div class="map-fallback"><b>이 기기에서는 지도를 표시할 수 없습니다.</b><span>그래픽 가속(WebGL)을 사용할 수 없어 사업지 목록으로 안내합니다.</span><button type="button" data-fallback-list>사업지 목록 보기</button></div>';
+    if(count)count.textContent=`전체 ${allPolygons.length}곳`;
+    root?.querySelector('[data-fallback-list]')?.addEventListener('click',()=>window.showPage?.('newPage'));
+  }
   async function loadFeatures(){
     const parts=await Promise.all(MAP_DATA_URLS.map(u=>fetch(u,{cache:'force-cache'}).then(r=>r.ok?r.json():EMPTY).catch(()=>EMPTY)));
     const seen=new Set();allPolygons=parts.flatMap(x=>x.features||[]).map(hydrate).filter(f=>{const id=f.properties?.projectId;if(!id||seen.has(id))return false;seen.add(id);return true});loaded=true;buildFilters();
@@ -36,13 +42,7 @@
   function selectProject(id){const p=byId(id);if(!p)return;const sheet=document.getElementById('mapSheet');sheet.innerHTML=sheetHTML(p);sheet.classList.add('open');sheet.querySelector('.sheet-detail').onclick=()=>window.openDetail?.(p.id);const feature=allPolygons.find(f=>String(f.properties?.projectId)===String(id));if(feature){const c=polygonCenter(feature);map.easeTo({center:c,zoom:Math.max(map.getZoom(),15),duration:500})}}
   async function init(){
     if(map||!window.maplibregl)return;if(!loaded)await loadFeatures();
-    if(typeof maplibregl.supported==='function'&&!maplibregl.supported()){
-      const root=document.getElementById('projectMap'),count=document.getElementById('mapCount');
-      if(root)root.innerHTML='<div class="map-fallback"><b>이 기기에서는 지도를 표시할 수 없습니다.</b><span>그래픽 가속(WebGL)을 사용할 수 없어 사업지 목록으로 안내합니다.</span><button type="button" data-fallback-list>사업지 목록 보기</button></div>';
-      if(count)count.textContent=`전체 ${allPolygons.length}곳`;
-      root?.querySelector('[data-fallback-list]')?.addEventListener('click',()=>window.showPage?.('newPage'));
-      return;
-    }
+    if(typeof maplibregl.supported==='function'&&!maplibregl.supported()){showFallback();return}
     map=new maplibregl.Map({container:'projectMap',style:baseStyle,center:[126.978,37.5665],zoom:10.3,minZoom:8,maxZoom:19,attributionControl:false});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');map.addControl(new maplibregl.AttributionControl({compact:true}),'top-right');
     map.on('load',()=>{
@@ -62,7 +62,7 @@
     const el=document.getElementById('boundaryMap');if(!el||!window.maplibregl||!feature)return;if(detailBoundaryMap)detailBoundaryMap.remove();
     detailBoundaryMap=new maplibregl.Map({container:el,style:baseStyle,interactive:true,attributionControl:false});detailBoundaryMap.on('load',()=>{detailBoundaryMap.addSource('boundary',{type:'geojson',data:feature});detailBoundaryMap.addLayer({id:'boundary-fill',type:'fill',source:'boundary',paint:{'fill-color':'#2563eb','fill-opacity':.18}});detailBoundaryMap.addLayer({id:'boundary-line',type:'line',source:'boundary',paint:{'line-color':'#202124','line-width':3}});const coords=[];const walk=x=>Array.isArray(x?.[0])?x.forEach(walk):coords.push(x);walk(feature.geometry.coordinates);const b=coords.reduce((box,p)=>box.extend(p),new maplibregl.LngLatBounds(coords[0],coords[0]));detailBoundaryMap.fitBounds(b,{padding:30,maxZoom:16,duration:0})})
   }
-  document.addEventListener('click',e=>{if(e.target.closest('[data-page="mapPage"],[data-go="mapPage"]'))setTimeout(()=>init().then(()=>map?.resize()),0)});
+  document.addEventListener('click',e=>{if(e.target.closest('[data-page="mapPage"],[data-go="mapPage"]'))setTimeout(()=>init().then(()=>map?.resize()).catch(showFallback),0)});
   const input=document.getElementById('mapSearch');let timer;input?.addEventListener('input',e=>{clearTimeout(timer);timer=setTimeout(()=>{query=e.target.value||'';syncSources()},180)});document.getElementById('clearMapSearch')?.addEventListener('click',()=>{query='';if(input)input.value='';syncSources()});
   document.getElementById('mapLocate')?.addEventListener('click',()=>navigator.geolocation?.getCurrentPosition(pos=>map?.easeTo({center:[pos.coords.longitude,pos.coords.latitude],zoom:15}),()=>alert('현재 위치를 확인할 수 없습니다.'),{enableHighAccuracy:false,timeout:7000}));
   const oldRender=window.renderDashboard;if(typeof oldRender==='function')window.renderDashboard=function(){const r=oldRender.apply(this,arguments);if(loaded){allPolygons=allPolygons.map(hydrate);buildFilters();syncSources()}return r};
