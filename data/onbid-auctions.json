@@ -2,7 +2,7 @@
   "ok": true,
   "ready": true,
   "version": "static-1.1",
-  "generatedAt": "2026-10-16T19:23:34Z",
+  "generatedAt": "2026-10-17T18:18:00Z",
   "source": "대한민국 온비드 공공데이터 API",
   "count": 60300,
   "items": [
@@ -714192,7 +714192,7 @@
       "buildingSqm": null,
       "bidStart": "",
       "bidEnd": "",
-      "failedBidCount": 1,
+      "failedBidCount": 2,
       "onbidUrl": "https://www.onbid.co.kr/"
     },
     {
@@ -714213,7 +714213,7 @@
       "buildingSqm": null,
       "bidStart": "",
       "bidEnd": "",
-      "failedBidCount": 1,
+      "failedBidCount": 2,
       "onbidUrl": "https://www.onbid.co.kr/"
     },
     {
@@ -714234,7 +714234,7 @@
       "buildingSqm": null,
       "bidStart": "",
       "bidEnd": "",
-      "failedBidCount": 1,
+      "failedBidCount": 2,
       "onbidUrl": "https://www.onbid.co.kr/"
     },
     {
@@ -714444,7 +714444,7 @@
       "buildingSqm": 861.16,
       "bidStart": "",
       "bidEnd": "",
-      "failedBidCount": 1,
+      "failedBidCount": 2,
       "onbidUrl": "https://www.onbid.co.kr/"
     },
     {
@@ -714465,7 +714465,7 @@
       "buildingSqm": 861.16,
       "bidStart": "",
       "bidEnd": "",
-      "failedBidCount": 1,
+      "failedBidCount": 2,
       "onbidUrl": "https://www.onbid.co.kr/"
     },
     {
@@ -714486,7 +714486,7 @@
       "buildingSqm": 861.16,
       "bidStart": "",
       "bidEnd": "",
-      "failedBidCount": 1,
+      "failedBidCount": 2,
       "onbidUrl": "https://www.onbid.co.kr/"
     },
     {
